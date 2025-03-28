@@ -11,6 +11,7 @@
 	let intervalId
 	let dateFormat
 	let theme = 'system'
+	let isFormVisible = false
 
 	if (typeof localStorage !== 'undefined' && localStorage.getItem('momentTrackerDateFormat')) {
 		dateFormat = localStorage.getItem('momentTrackerDateFormat')
@@ -181,9 +182,7 @@
 		newTimerName = ''
 		newTimerDate = ''
 		newTimerTime = ''
-
-		// Focus back to name input
-		nameInput.focus()
+		isFormVisible = false
 
 		updateElapsedTimes()
 		if (timers.length === 1) {
@@ -251,32 +250,44 @@
 		<p class="empty">No moment yet. Add one to get started!</p>
 	{/if}
 
-	<form class="add-timer-form" on:submit={handleSubmit}>
-		<label for="timer-name" class="sr-only">Moment name</label>
-		<input
-			id="timer-name"
-			class="input"
-			type="text"
-			placeholder="Moment name"
-			bind:this={nameInput}
-			bind:value={newTimerName}
-			required
-		/>
+	{#if timers.length > 0}
+		<button 
+			class="add-button" 
+			on:click={() => isFormVisible = !isFormVisible}
+			aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
+		>
+			{isFormVisible ? '−' : '+'}
+		</button>
+	{/if}
 
-		<label for="timer-date" class="sr-only">Date</label>
-		<input id="timer-date" class="input" type="date" bind:value={newTimerDate} required />
+	<div class="form-container" class:visible={isFormVisible || timers.length === 0}>
+		<form class="add-timer-form" on:submit={handleSubmit}>
+			<label for="timer-name" class="sr-only">Moment name</label>
+			<input
+				id="timer-name"
+				class="input"
+				type="text"
+				placeholder="Moment name"
+				bind:this={nameInput}
+				bind:value={newTimerName}
+				required
+			/>
 
-		<label for="timer-time" class="sr-only">Time</label>
-		<input
-			id="timer-time"
-			class="input"
-			type="time"
-			bind:value={newTimerTime}
-			placeholder="Optional time"
-		/>
+			<label for="timer-date" class="sr-only">Date</label>
+			<input id="timer-date" class="input" type="date" bind:value={newTimerDate} required />
 
-		<button type="submit" class="primary-btn">Track a moment</button>
-	</form>
+			<label for="timer-time" class="sr-only">Time</label>
+			<input
+				id="timer-time"
+				class="input"
+				type="time"
+				bind:value={newTimerTime}
+				placeholder="Optional time"
+			/>
+
+			<button type="submit" class="primary-btn">Track a moment</button>
+		</form>
+	</div>
 
 	<div class="share-block">
 		<label for="share-code" class="share-label">
@@ -345,5 +356,39 @@
 	.setting-label {
 		font-weight: 500;
 		font-size: 0.95rem;
+	}
+
+	.add-button {
+		width: 3rem;
+		height: 3rem;
+		border-radius: 50%;
+		background: var(--button-bg);
+		color: var(--button-text);
+		border: none;
+		font-size: 1.5rem;
+		cursor: pointer;
+		position: relative;
+		margin: 1rem auto;
+		display: block;
+		transition: transform 0.2s ease;
+	}
+
+	.add-button:hover {
+		transform: scale(1.1);
+	}
+
+	.form-container {
+		max-height: 0;
+		overflow: hidden;
+		transition: max-height 0.3s ease-out;
+	}
+
+	.form-container.visible {
+		max-height: 300px;
+	}
+
+	.add-timer-form {
+		margin-top: 0;
+		padding-top: 1rem;
 	}
 </style>
