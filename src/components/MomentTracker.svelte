@@ -272,7 +272,7 @@
 
 	<section class="form-container" class:visible={isFormVisible || timers.length === 0}>
 		<form class="add-timer-form" on:submit={handleSubmit}>
-			<label for="timer-name" class="sr-only">Moment name</label>
+			<label for="timer-name" class="input-label">Moment name</label>
 			<input
 				id="timer-name"
 				class="input"
@@ -283,25 +283,31 @@
 				required
 			/>
 
-			<label for="timer-date" class="sr-only">Date</label>
-			<input id="timer-date" class="input" type="date" bind:value={newTimerDate} required />
+			<div class="input-row">
+				<div class="input-block">
+					<label for="timer-date" class="input-label">Date (past or future)</label>
+					<input id="timer-date" class="input" type="date" bind:value={newTimerDate} required />
+				</div>
 
-			<label for="timer-time" class="sr-only">Time</label>
-			<input
-				id="timer-time"
-				class="input"
-				type="time"
-				bind:value={newTimerTime}
-				placeholder="Optional time"
-			/>
+				<div class="input-block">
+					<label for="timer-time" class="input-label">Time</label>
+					<input
+						id="timer-time"
+						class="input"
+						type="time"
+						bind:value={newTimerTime}
+						placeholder="Optional time"
+					/>
+				</div>
+			</div>
 
 			<button type="submit" class="primary-btn">Track a moment</button>
 		</form>
 	</section>
 
 	<div class="share-block">
-		<label for="share-code" class="share-label">
-			{timers.length > 0 ? 'Share or save your moments:' : 'Import moments:'}
+		<label for="share-code" class="input-label">
+			{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
 		</label>
 		<input
 			id="share-code"
@@ -313,10 +319,10 @@
 		/>
 	</div>
 
-	<div class="settings-row">
-		<div class="setting-block">
-			<label for="date-format" class="setting-label">
-				Date format:
+	<div class="input-row">
+		<div class="input-block">
+			<label for="date-format" class="input-label">
+				Date format
 			</label>
 			<select 
 				id="date-format"
@@ -330,9 +336,9 @@
 			</select>
 		</div>
 
-		<div class="setting-block">
-			<label for="theme" class="setting-label">
-				Theme:
+		<div class="input-block">
+			<label for="theme" class="input-label">
+				Theme
 			</label>
 			<select 
 				id="theme"
@@ -349,20 +355,20 @@
 </main>
 
 <style>
-	.settings-row {
+	.input-row {
 		margin-top: 1.5rem;
 		display: flex;
 		gap: 1rem;
 	}
 
-	.setting-block {
+	.input-block {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 	}
 
-	.setting-label {
+	.input-label {
 		font-weight: 500;
 		font-size: 0.95rem;
 	}
@@ -399,5 +405,8 @@
 	.add-timer-form {
 		margin-top: 0;
 		padding-top: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 </style>
