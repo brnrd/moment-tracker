@@ -1,17 +1,26 @@
 <script>
+    import './MomentTracker.css';
+
   let timers = [];
   let newTimerName = '';
   let newTimerDate = '';
   let newTimerTime = '';
-  let nameInput; // Reference to the name input element
+  let nameInput;
   let shareCode = '';
   let intervalId;
+  let dateFormat;
+  
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('momentTrackerDateFormat')) {
+    dateFormat = localStorage.getItem('momentTrackerDateFormat');
+  } else {
+    dateFormat = 'default';
+  }
 
   // Load timers from localStorage on component mount
   import { onMount } from 'svelte';
   
   onMount(() => {
-    const savedCode = localStorage.getItem('timeTrackerData');
+    const savedCode = localStorage.getItem('momentTrackerData');
     if (savedCode) {
       loadTimers(savedCode, false);
     }
@@ -24,13 +33,13 @@
 
   function saveToStorage() {
     if (timers.length === 0) {
-      localStorage.removeItem('timeTrackerData');
+      localStorage.removeItem('momentTrackerData');
       shareCode = '';
       return;
     }
     
     const encoded = encodeTimers();
-    localStorage.setItem('timeTrackerData', encoded);
+    localStorage.setItem('momentTrackerData', encoded);
     shareCode = encoded;
   }
 
@@ -172,8 +181,8 @@
     }
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  function handleSubmit(event) {
+    event.preventDefault();
     addTimer();
   }
 
@@ -181,53 +190,105 @@
     timers = timers.filter((_, i) => i !== index);
     saveToStorage();
   }
+
+  function handleDateFormatChange( e) {
+    dateFormat = e.target.value;
+    localStorage.setItem('momentTrackerDateFormat', dateFormat);
+  }
+
+  function formatDate(dateStr, format) {
+    const date = new Date(dateStr);
+    switch(format) {
+      case 'us':
+        return date.toLocaleDateString('en-US');
+      case 'eu':
+        return date.toLocaleDateString('en-GB');
+      default:
+        return dateStr; // Default format
+    }
+  }
 </script>
 
-<div>
-  <form on:submit={handleSubmit}>
-    <input 
-      bind:this={nameInput}
-      type="text"
-      placeholder="Timer name"
-      bind:value={newTimerName}
-      required
-    />
-    <input 
-      type="date"
-      bind:value={newTimerDate}
-      required
-    />
-    <input 
-      type="time"
-      bind:value={newTimerTime}
-      placeholder="Optional time"
-    />
-    <button type="submit">Add Timer</button>
-  </form>
+<div class="app">  
+    {#if timers.length > 0}
+      <ul class="timer-list">
+        {#each timers as timer, index}
+          <li class="timer-item">
+            <div class="timer-meta">
+              <strong>{timer.name}</strong>
+              <span class="timestamp">
+                ({formatDate(timer.date, dateFormat)}{timer.time ? ` ${timer.time}` : ''})
+              </span>
+              <span class="elapsed">{timer.elapsedTime}</span>
+            </div>
+            <button class="remove-btn" on:click={() => removeTimer(index)} aria-label="Remove timer">✕</button>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p class="empty">No moment yet. Add one to get started!</p>
+    {/if}
 
-  {#if timers.length > 0}
-    <ul>
-      {#each timers as timer, index}
-        <li>
-          <strong>{timer.name}</strong> 
-          ({timer.date}{timer.time ? ` ${timer.time}` : ''}): 
-          {timer.elapsedTime}
-          <button on:click={() => removeTimer(index)}>Remove</button>
-        </li>
-      {/each}
-    </ul>
-  {:else}
-    <p>No timers yet. Add one to get started!</p>
-  {/if}
+    <form class="add-timer-form" on:submit={handleSubmit}>
+        <label for="timer-name" class="sr-only">Moment name</label>
+        <input 
+          id="timer-name"
+          class="input"
+          type="text"
+          placeholder="Moment name"
+          bind:this={nameInput}
+          bind:value={newTimerName}
+          required
+        />
+    
+        <label for="timer-date" class="sr-only">Date</label>
+        <input 
+          id="timer-date"
+          class="input"
+          type="date"
+          bind:value={newTimerDate}
+          required
+        />
+    
+        <label for="timer-time" class="sr-only">Time</label>
+        <input 
+          id="timer-time"
+          class="input"
+          type="time"
+          bind:value={newTimerTime}
+          placeholder="Optional time"
+        />
+    
+        <button type="submit" class="primary-btn">Track a moment</button>
+      </form>
+  
+    <div class="share-block">
+      <label for="share-code" class="share-label">
+        {timers.length > 0 ? 'Share or save your moments:' : 'Import moments:'}
+      </label>
+      <input 
+        id="share-code"
+        class="input"
+        type="text"
+        placeholder="Paste your moment code here"
+        bind:value={shareCode}
+        on:change={handleShareCodeChange}
+      />
+    </div>
 
-  <div style="margin-top: 2rem;">
-    <p>{timers.length > 0 ? 'Share code:' : 'Import code:'}</p>
-    <input 
-      type="text" 
-      placeholder="Paste import code here" 
-      bind:value={shareCode}
-      on:change={handleShareCodeChange}
-      style="width: 100%;"
-    />
+    <div class="format-block">
+      <label for="date-format" class="format-label">
+        Date format:
+      </label>
+      <select 
+        id="date-format"
+        class="input"
+        bind:value={dateFormat}
+        on:change={handleDateFormatChange}
+      >
+        <option value="default">Default (YYYY-MM-DD)</option>
+        <option value="us">US (MM/DD/YYYY)</option>
+        <option value="eu">EU (DD/MM/YYYY)</option>
+      </select>
+    </div>
   </div>
-</div>
