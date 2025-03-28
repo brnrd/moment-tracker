@@ -4,6 +4,8 @@ A small, minimalist **moment tracker** built with [Svelte](https://svelte.dev) a
 
 It lets you mark meaningful life events — like quitting a habit, starting a relationship, or any personal milestone — and shows you how much time has passed since.
 
+ **Use it here:** [https://moments.vegetalope.com/](https://moments.vegetalope.com/)
+
 ## Features
 
 - Add multiple moments with a label, date, and optional time
