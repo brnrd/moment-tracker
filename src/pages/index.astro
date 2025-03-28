@@ -1,17 +1,11 @@
 ---
-import MomentTracker from '../components/MomentTracker.svelte';
+import Layout from '../layouts/Layout.astro'
+import MomentTracker from '../components/MomentTracker.svelte'
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Moment Tracker</title>
-  </head>
-  <body>
-    <main>
-      <h1 style="text-align: center;">Moment Tracker</h1>
-      <MomentTracker client:load />
-    </main>
-  </body>
-</html>
+<Layout>
+	<main>
+		<h1 style="text-align: center;">Moment Tracker</h1>
+		<MomentTracker client:load />
+	</main>
+</Layout>

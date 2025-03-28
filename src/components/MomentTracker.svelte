@@ -1,5 +1,6 @@
 <script>
 	import './MomentTracker.css'
+	import { onMount } from 'svelte'
 
 	let timers = []
 	let newTimerName = ''
@@ -9,6 +10,7 @@
 	let shareCode = ''
 	let intervalId
 	let dateFormat
+	let theme = 'system'
 
 	if (typeof localStorage !== 'undefined' && localStorage.getItem('momentTrackerDateFormat')) {
 		dateFormat = localStorage.getItem('momentTrackerDateFormat')
@@ -17,12 +19,17 @@
 	}
 
 	// Load timers from localStorage on component mount
-	import { onMount } from 'svelte'
-
 	onMount(() => {
 		const savedCode = localStorage.getItem('momentTrackerData')
 		if (savedCode) {
 			loadTimers(savedCode, false)
+		}
+
+		// Load saved theme preference
+		const savedTheme = localStorage.getItem('theme')
+		if (savedTheme) {
+			theme = savedTheme
+			document.documentElement.setAttribute('data-theme', savedTheme)
 		}
 
 		// Cleanup interval on component destroy
@@ -210,6 +217,16 @@
 				return dateStr // Default format
 		}
 	}
+
+	function handleThemeChange(e) {
+		theme = e.target.value
+		if (theme === 'system') {
+			document.documentElement.removeAttribute('data-theme')
+		} else {
+			document.documentElement.setAttribute('data-theme', theme)
+		}
+		localStorage.setItem('theme', theme)
+	}
 </script>
 
 <div class="app">
@@ -275,17 +292,58 @@
 		/>
 	</div>
 
-	<div class="format-block">
-		<label for="date-format" class="format-label"> Date format: </label>
-		<select
-			id="date-format"
-			class="input"
-			bind:value={dateFormat}
-			on:change={handleDateFormatChange}
-		>
-			<option value="default">Default (YYYY-MM-DD)</option>
-			<option value="us">US (MM/DD/YYYY)</option>
-			<option value="eu">EU (DD/MM/YYYY)</option>
-		</select>
+<div class="settings-row">
+		<div class="setting-block">
+			<label for="date-format" class="setting-label">
+				Date format:
+			</label>
+			<select 
+				id="date-format"
+				class="input"
+				bind:value={dateFormat}
+				on:change={handleDateFormatChange}
+			>
+				<option value="current">Current (YYYY-MM-DD)</option>
+				<option value="us">US (MM/DD/YYYY)</option>
+				<option value="eu">EU (DD/MM/YYYY)</option>
+			</select>
+		</div>
+
+		<div class="setting-block">
+			<label for="theme" class="setting-label">
+				Theme:
+			</label>
+			<select 
+				id="theme"
+				class="input"
+				bind:value={theme}
+				on:change={handleThemeChange}
+			>
+				<option value="system">System preference</option>
+				<option value="light">Light</option>
+				<option value="dark">Dark</option>
+			</select>
+		</div>
 	</div>
+
 </div>
+
+<style>
+	.settings-row {
+		margin-top: 1.5rem;
+		display: flex;
+		gap: 1rem;
+	}
+
+	.setting-block {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.setting-label {
+		font-weight: 500;
+		font-size: 0.95rem;
+	}
+</style>

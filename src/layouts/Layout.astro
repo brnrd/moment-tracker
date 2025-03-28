@@ -1,3 +1,7 @@
+---
+import '../styles/global.css'
+---
+
 <!doctype html>
 <html lang="en">
 	<head>
@@ -6,17 +10,32 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>Time Tracker</title>
+		<script>
+			const theme = localStorage.getItem('theme')
+			if (theme) {
+				document.documentElement.setAttribute('data-theme', theme)
+			}
+		</script>
 	</head>
 	<body>
 		<slot />
 	</body>
 </html>
 
-<style>
-	html,
-	body {
+<style is:global>
+	html {
 		margin: 0;
 		width: 100%;
 		height: 100%;
+		background-color: var(--bg);
+		color: var(--text);
+	}
+
+	body {
+		margin: 0;
+		width: 100%;
+		min-height: 100%;
+		background-color: var(--bg);
+		color: var(--text);
 	}
 </style>
