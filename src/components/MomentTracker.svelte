@@ -227,24 +227,26 @@
 	}
 </script>
 
-<div class="app">
+<main class="app">
 	{#if timers.length > 0}
-		<ul class="timer-list">
-			{#each timers as timer, index}
-				<li class="timer-item">
-					<div class="timer-meta">
-						<strong>{timer.name}</strong>
-						<span class="timestamp">
-							({formatDate(timer.date, dateFormat)}{timer.time ? ` ${timer.time}` : ''})
-						</span>
-						<span class="elapsed">{timer.elapsedTime}</span>
-					</div>
-					<button class="remove-btn" on:click={() => removeTimer(index)} aria-label="Remove timer"
-						>✕</button
-					>
-				</li>
-			{/each}
-		</ul>
+		<section aria-label="Timer list">
+			<ul class="timer-list">
+				{#each timers as timer, index}
+					<li class="timer-item">
+						<div class="timer-meta">
+							<strong>{timer.name}</strong>
+							<span class="timestamp">
+								({formatDate(timer.date, dateFormat)}{timer.time ? ` ${timer.time}` : ''})
+							</span>
+							<span class="elapsed">{timer.elapsedTime}</span>
+						</div>
+						<button class="remove-btn" on:click={() => removeTimer(index)} aria-label="Remove timer"
+							>✕</button
+						>
+					</li>
+				{/each}
+			</ul>
+		</section>
 	{:else}
 		<p class="empty">No moment yet. Add one to get started!</p>
 	{/if}
@@ -252,14 +254,20 @@
 	{#if timers.length > 0}
 		<button 
 			class="add-button" 
-			on:click={() => isFormVisible = !isFormVisible}
+			on:click={() => {
+				isFormVisible = !isFormVisible;
+				if (isFormVisible) {
+					// Add slight delay to ensure the form is visible before focusing
+					setTimeout(() => nameInput.focus(), 0);
+				}
+			}}
 			aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
 		>
 			{isFormVisible ? '−' : '+'}
 		</button>
 	{/if}
 
-	<div class="form-container" class:visible={isFormVisible || timers.length === 0}>
+	<section class="form-container" class:visible={isFormVisible || timers.length === 0}>
 		<form class="add-timer-form" on:submit={handleSubmit}>
 			<label for="timer-name" class="sr-only">Moment name</label>
 			<input
@@ -286,7 +294,7 @@
 
 			<button type="submit" class="primary-btn">Track a moment</button>
 		</form>
-	</div>
+	</section>
 
 	<div class="share-block">
 		<label for="share-code" class="share-label">
@@ -302,7 +310,7 @@
 		/>
 	</div>
 
-<div class="settings-row">
+	<div class="settings-row">
 		<div class="setting-block">
 			<label for="date-format" class="setting-label">
 				Date format:
@@ -335,8 +343,7 @@
 			</select>
 		</div>
 	</div>
-
-</div>
+</main>
 
 <style>
 	.settings-row {
