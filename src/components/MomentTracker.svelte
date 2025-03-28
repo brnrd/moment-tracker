@@ -12,6 +12,7 @@
 	let dateFormat
 	let theme = 'system'
 	let isFormVisible = false
+	let isSettingsVisible = false
 
 	if (typeof localStorage !== 'undefined' && localStorage.getItem('momentTrackerDateFormat')) {
 		dateFormat = localStorage.getItem('momentTrackerDateFormat')
@@ -19,15 +20,17 @@
 		dateFormat = 'default'
 	}
 
-	// Load timers from localStorage on component mount
+	// Load moments from localStorage on component mount
 	onMount(() => {
 		const savedCode = localStorage.getItem('momentTrackerData')
+
 		if (savedCode) {
 			loadTimers(savedCode, false)
 		}
 
 		// Load saved theme preference
 		const savedTheme = localStorage.getItem('theme')
+
 		if (savedTheme) {
 			theme = savedTheme
 			document.documentElement.setAttribute('data-theme', savedTheme)
@@ -47,6 +50,7 @@
 		}
 
 		const encoded = encodeTimers()
+
 		localStorage.setItem('momentTrackerData', encoded)
 		shareCode = encoded
 	}
@@ -70,7 +74,7 @@
 
 			if (askForMerge && timers.length > 0) {
 				const choice = confirm(
-					'Do you want to add these timers to your existing ones? Click OK to add, Cancel to replace.'
+					'Do you want to add these moments to your existing ones? Click OK to add, Cancel to replace.'
 				)
 				if (choice) {
 					// Merge timers
@@ -91,7 +95,7 @@
 			}
 
 			saveToStorage()
-		} catch (e) {
+		} catch (event) {
 			alert('Invalid code')
 			shareCode = timers.length > 0 ? encodeTimers() : ''
 		}
@@ -99,6 +103,7 @@
 
 	function handleShareCodeChange() {
 		if (!shareCode) return
+
 		if (shareCode !== encodeTimers()) {
 			loadTimers(shareCode)
 		}
@@ -106,6 +111,7 @@
 
 	function calculateElapsedTime(start, hasTime) {
 		const now = new Date()
+
 		if (!hasTime) {
 			start.setHours(0, 0, 0, 0)
 		}
@@ -131,34 +137,36 @@
 			adjustedMonths += 12
 		}
 
+		let timeString = isFuture ? 'in ' : ''
+
+		if (adjustedYears > 0) timeString += `${adjustedYears} years, `
+		if (adjustedMonths > 0) timeString += `${adjustedMonths} months, `
+		if (adjustedDays > 0) timeString += `${adjustedDays} days`
+
+
 		if (hasTime) {
 			const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
 			const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
-			let timeString = isFuture ? 'in ' : ''
-			if (adjustedYears > 0) timeString += `${adjustedYears}y `
-			if (adjustedMonths > 0) timeString += `${adjustedMonths}m `
-			if (adjustedDays > 0) timeString += `${adjustedDays}d `
-			timeString += `${hours}h ${minutes}m`
-			if (!isFuture) timeString += ' ago'
-			return timeString.trim()
-		} else {
-			let timeString = isFuture ? 'in ' : ''
-			if (adjustedYears > 0) timeString += `${adjustedYears} years `
-			if (adjustedMonths > 0) timeString += `${adjustedMonths} months `
-			if (adjustedDays > 0) timeString += `${adjustedDays} days`
-			if (!isFuture) timeString += ' ago'
-			return timeString.trim() || (isFuture ? 'in 0 days' : '0 days ago')
+			timeString += `, ${hours} hours, and ${minutes} minutes`
 		}
+
+			
+		if (!isFuture) timeString += ' ago'
+
+		return timeString.trim() || (isFuture ? 'in 0 days' : '0 days ago')
+		
 	}
 
 	function updateElapsedTimes() {
 		timers = timers.map((timer) => {
 			const date = new Date(timer.date)
+
 			if (timer.time) {
 				const [hours, minutes] = timer.time.split(':')
 				date.setHours(hours, minutes, 0, 0)
 			}
+
 			return {
 				...timer,
 				elapsedTime: calculateElapsedTime(date, !!timer.time)
@@ -209,6 +217,7 @@
 
 	function formatDate(dateStr, format) {
 		const date = new Date(dateStr)
+
 		switch (format) {
 			case 'us':
 				return date.toLocaleDateString('en-US')
@@ -255,13 +264,12 @@
 	{/if}
 
 	{#if timers.length > 0}
-		<button 
-			class="add-button" 
+		<button
+			class="add-button"
 			on:click={() => {
-				isFormVisible = !isFormVisible;
+				isFormVisible = !isFormVisible
 				if (isFormVisible) {
-					// Add slight delay to ensure the form is visible before focusing
-					setTimeout(() => nameInput.focus(), 0);
+					setTimeout(() => nameInput.focus(), 100)
 				}
 			}}
 			aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
@@ -305,58 +313,59 @@
 		</form>
 	</section>
 
-	<div class="share-block">
-		<label for="share-code" class="input-label">
-			{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
-		</label>
-		<input
-			id="share-code"
-			class="input"
-			type="text"
-			placeholder="Paste your moment code here"
-			bind:value={shareCode}
-			on:change={handleShareCodeChange}
-		/>
-	</div>
+	<button
+		class="settings-button"
+		on:click={() => (isSettingsVisible = !isSettingsVisible)}
+		aria-label={isSettingsVisible ? 'Hide settings' : 'Show settings'}
+	>
+		Settings {isSettingsVisible ? '−' : '+'}
+	</button>
 
-	<div class="input-row">
-		<div class="input-block">
-			<label for="date-format" class="input-label">
-				Date format
+	<section class="settings-container" class:visible={isSettingsVisible}>
+		<div class="share-block">
+			<label for="share-code" class="input-label">
+				{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
 			</label>
-			<select 
-				id="date-format"
+			<input
+				id="share-code"
 				class="input"
-				bind:value={dateFormat}
-				on:change={handleDateFormatChange}
-			>
-				<option value="default">Current (YYYY-MM-DD)</option>
-				<option value="us">US (MM/DD/YYYY)</option>
-				<option value="eu">EU (DD/MM/YYYY)</option>
-			</select>
+				type="text"
+				placeholder="Paste your moment code here"
+				bind:value={shareCode}
+				on:change={handleShareCodeChange}
+			/>
 		</div>
 
-		<div class="input-block">
-			<label for="theme" class="input-label">
-				Theme
-			</label>
-			<select 
-				id="theme"
-				class="input"
-				bind:value={theme}
-				on:change={handleThemeChange}
-			>
-				<option value="system">System preference</option>
-				<option value="light">Light</option>
-				<option value="dark">Dark</option>
-			</select>
+		<div class="input-row">
+			<div class="input-block">
+				<label for="date-format" class="input-label"> Date format </label>
+				<select
+					id="date-format"
+					class="input"
+					bind:value={dateFormat}
+					on:change={handleDateFormatChange}
+				>
+					<option value="default">Current (YYYY-MM-DD)</option>
+					<option value="us">US (MM/DD/YYYY)</option>
+					<option value="eu">EU (DD/MM/YYYY)</option>
+				</select>
+			</div>
+
+			<div class="input-block">
+				<label for="theme" class="input-label"> Theme </label>
+				<select id="theme" class="input" bind:value={theme} on:change={handleThemeChange}>
+					<option value="system">System preference</option>
+					<option value="light">Light</option>
+					<option value="dark">Dark</option>
+				</select>
+			</div>
 		</div>
-	</div>
+	</section>
 </main>
 
 <style>
 	.input-row {
-		margin-top: 1.5rem;
+		margin-top: 0;
 		display: flex;
 		gap: 1rem;
 	}
@@ -408,5 +417,36 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+
+	.settings-button {
+		width: 100%;
+		padding: 0.5rem;
+		margin: 1rem 0;
+		background: var(--bg-bg);
+		color: var(--text);
+		border: none;
+		border-radius: 0.25rem;
+		font-size: 1rem;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		transition: transform 0.2s ease;
+	}
+
+	.settings-button:hover {
+		transform: scale(1.02);
+	}
+
+	.settings-container {
+		max-height: 0;
+		overflow: hidden;
+		transition: max-height 0.3s ease-out;
+	}
+
+	.settings-container.visible {
+		max-height: 300px;
 	}
 </style>
