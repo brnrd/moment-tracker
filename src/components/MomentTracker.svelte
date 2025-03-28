@@ -110,10 +110,11 @@
 			start.setHours(0, 0, 0, 0)
 		}
 
-		const diff = now - start
-		const years = now.getFullYear() - start.getFullYear()
-		const months = now.getMonth() - start.getMonth()
-		const days = now.getDate() - start.getDate()
+		const diff = Math.abs(now - start)
+		const isFuture = start > now
+		const years = Math.abs(now.getFullYear() - start.getFullYear())
+		const months = Math.abs(now.getMonth() - start.getMonth())
+		const days = Math.abs(now.getDate() - start.getDate())
 
 		let adjustedYears = years
 		let adjustedMonths = months
@@ -134,18 +135,20 @@
 			const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
 			const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
-			let timeString = ''
+			let timeString = isFuture ? 'in ' : ''
 			if (adjustedYears > 0) timeString += `${adjustedYears}y `
 			if (adjustedMonths > 0) timeString += `${adjustedMonths}m `
 			if (adjustedDays > 0) timeString += `${adjustedDays}d `
 			timeString += `${hours}h ${minutes}m`
+			if (!isFuture) timeString += ' ago'
 			return timeString.trim()
 		} else {
-			let timeString = ''
+			let timeString = isFuture ? 'in ' : ''
 			if (adjustedYears > 0) timeString += `${adjustedYears} years `
 			if (adjustedMonths > 0) timeString += `${adjustedMonths} months `
 			if (adjustedDays > 0) timeString += `${adjustedDays} days`
-			return timeString.trim() || '0 days'
+			if (!isFuture) timeString += ' ago'
+			return timeString.trim() || (isFuture ? 'in 0 days' : '0 days ago')
 		}
 	}
 
