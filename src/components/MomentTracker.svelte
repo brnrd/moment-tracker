@@ -278,6 +278,17 @@
 		}
 		localStorage.setItem('theme', theme)
 	}
+
+	function copyToClipboard() {
+		navigator.clipboard.writeText(shareCode)
+			.then(() => {
+				console.log('Share code copied to clipboard');
+			})
+			.catch((err) => {
+				console.error('Failed to copy share code: ', err);
+			});
+	}
+
 </script>
 
 <main class="app">
@@ -406,14 +417,18 @@
 				<label for="share-code" class="input-label">
 					{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
 				</label>
-				<input
-				id="share-code"
-				class="input"
-				type="text"
-				placeholder="Paste your moment code here"
-				bind:value={shareCode}
-				on:change={handleShareCodeChange}
-				/>
+				<div class="share-code-wrapper">
+					<input
+						id="share-code"
+						class="input share-input"
+						type="text"
+						placeholder="Paste your moment code here"
+						bind:value={shareCode}
+						on:change={handleShareCodeChange}
+						on:focus={(e) => e.target.select()}
+					/>
+					<button type="button" class="copy-btn" on:click={copyToClipboard} aria-label="Copy share code">Copy</button>
+				</div>
 			</div>
 		</div>
 	</section>

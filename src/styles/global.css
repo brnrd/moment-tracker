@@ -316,3 +316,28 @@ body {
 .settings-container.visible {
 	max-height: 300px;
 }
+
+.share-code-wrapper {
+	display: flex;
+	flex-direction: row;
+	gap: 0.5rem;
+}
+
+.share-input {
+	flex: 1;
+}
+
+.copy-btn {
+	padding: 0.5rem;
+	background: var(--background);
+	color: var(--main-text);
+	border: none;
+	border-radius: 0.25rem;
+	font-size: 1rem;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	transition: transform 0.2s ease;
+}
