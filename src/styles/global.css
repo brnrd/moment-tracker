@@ -55,8 +55,8 @@
 	--text-main: var(--flexoki-black);
 	--text-secondary: var(--flexoki-850);
 	
-	--cta-main: var(--flexoki-cyan-600);
-	--cta-hover: var(--flexoki-cyan-400);
+	--cta-main: var(--flexoki-yellow-600);
+	--cta-hover: var(--flexoki-yellow-400);
 	--cta-text: var(--flexoki-paper);
 	
 	--danger-main: var(--flexoki-red-600);
@@ -64,7 +64,9 @@
 
 	--input-background: var(--flexoki-paper);
 	--input-border: var(--flexoki-600);
-	--input-border-focus: var(--flexoki-cyan-850);
+	--input-border-focus: var(--flexoki-850);
+
+	--border: var(--flexoki-300);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,6 +78,8 @@
 		--input-background: var(--flexoki-950);
 		--input-border: var(--flexoki-900);
 		--input-border-focus: var(--flexoki-800);
+
+		--border: var(--flexoki-800);
 	}
 }
 
@@ -87,6 +91,8 @@
 	--input-background: var(--flexoki-950);
 	--input-border: var(--flexoki-900);
 	--input-border-focus: var(--flexoki-800);
+
+	--border: var(--flexoki-800);
 }	
 
 
@@ -116,7 +122,6 @@ body {
 	margin: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 1.25rem;
 }
 
 .timer-item {
@@ -177,10 +182,12 @@ body {
 	margin: 1rem auto;
 	display: block;
 	transition: transform 1s ease;
+	transition: background-color 300ms linear
 }
 
 .add-button:hover {
 	transform: scale(1.1);
+	background: var(--cta-hover);
 }
 
 .form-container {
@@ -251,10 +258,10 @@ body {
 	border: none;
 	border-radius: 6px;
 	cursor: pointer;
+	transition: background-color 300ms linear
 }
 
 .primary-btn:hover {
-	opacity: 0.9;
 	background: var(--cta-hover);
 }
 
