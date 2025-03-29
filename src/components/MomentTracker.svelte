@@ -149,6 +149,9 @@
 				adjustedYears += 1
 				adjustedMonths -= 12
 			}
+			adjustedDays = Math.abs(adjustedDays)
+			adjustedMonths = Math.abs(adjustedMonths)
+			adjustedYears = Math.abs(adjustedYears)
 		}
 
 		let timeString = isFuture ? 'in ' : ''
@@ -165,6 +168,7 @@
 			timeString += `, ${hours} hours, and ${minutes} minutes`
 		}
 
+		
 			
 		if (!isFuture) timeString += ' ago'
 
