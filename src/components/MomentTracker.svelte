@@ -1,5 +1,8 @@
 <script>
 	import { onMount } from 'svelte'
+	import dayjs from 'dayjs'
+
+	const REFRESH_INTERVAL = 1000 * 60 // 1 minute
 
 	let timers = []
 	let newTimerName = ''
@@ -92,7 +95,7 @@
 
 			if (timers.length > 0) {
 				if (intervalId) clearInterval(intervalId)
-				intervalId = setInterval(updateElapsedTimes, 1000 * 60)
+				intervalId = setInterval(updateElapsedTimes, REFRESH_INTERVAL)
 			}
 
 			saveToStorage()
@@ -111,77 +114,63 @@
 	}
 
 	function calculateElapsedTime(start, hasTime) {
-		const now = new Date()
+		let from = dayjs()
+		const to = dayjs(start)
 
-		if (!hasTime) {
-			start.setHours(0, 0, 0, 0)
+		const isFuture = from.isBefore(to)
+
+		let years = to.diff(from, 'year');
+		from = from.add(years, 'year');
+		
+		let months = to.diff(from, 'month');
+		from = from.add(months, 'month');
+		
+		let days = to.diff(from, 'day');
+		from = from.add(days, 'day');
+		
+		if (!isFuture) {
+			years = Math.abs(years);
+			months = Math.abs(months);
+			days = Math.abs(days);
 		}
 
-		const diff = Math.floor(now - start)
-		const isFuture = start > now
-		const years = Math.floor(now.getFullYear() - start.getFullYear())
-		const months = Math.floor(now.getMonth() - start.getMonth())
-		const days = Math.floor(now.getDate() - start.getDate())
-
-		let adjustedYears = years
-		let adjustedMonths = months
-		let adjustedDays = days
-
-		if (!isFuture) {			
-			if (days <= 0) {
-				adjustedMonths -= 1
-				const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-				adjustedDays = lastMonth.getDate() + days
-			}
-			
-			if (months < 0 || (months === 0 && days < 0)) {
-				adjustedYears -= 1
-				adjustedMonths += 12
-			}
-		} else {
-			if (days > 0) {
-				adjustedMonths += 1
-				const lastMonth = new Date(start.getFullYear(), start.getMonth(), 0)
-				adjustedDays = lastMonth.getDate() - days
-			}
-			
-			if (months > 0 || (months === 0 && days > 0)) {
-				adjustedYears += 1
-				adjustedMonths -= 12
-			}
-			adjustedDays = Math.abs(adjustedDays)
-			adjustedMonths = Math.abs(adjustedMonths)
-			adjustedYears = Math.abs(adjustedYears)
-		}
-
-		let timeString = isFuture ? 'in ' : ''
-
-		if (adjustedYears > 0) timeString += `${adjustedYears} years, `
-		if (adjustedMonths > 0) timeString += `${adjustedMonths} months, `
-		if (adjustedDays > 0) timeString += `${adjustedDays} days`
-
+		const parts = [];
+		if (years) parts.push(`${years} year${years > 1 ? 's' : ''}`);
+		if (months) parts.push(`${months} month${months > 1 ? 's' : ''}`);
+		if (days) parts.push(`${days} day${days > 1 ? 's' : ''}`);
 
 		if (hasTime) {
-			const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-			const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+			
+			let hours = to.diff(from, 'hour');
+			from = from.add(hours, 'hour');
 
-			timeString += `, ${hours} hours, and ${minutes} minutes`
+			let minutes = to.diff(from, 'minute');
+			from = from.add(minutes, 'minute');
+
+			if (!isFuture) {
+				hours = Math.abs(hours);
+				minutes = Math.abs(minutes);
+			}
+
+			if (hours) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+			if (minutes) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
 		}
 
+		let timeString = parts.join(', ')
+
+		if (isFuture) {
+			return `in ${timeString}`
+		}
+
+		if (timeString === '' && !hasTime) {
+			return 'today'
+		}
+
+		if (timeString === '' && hasTime) {
+			return 'now'
+		}
 		
-			
-		if (!isFuture) timeString += ' ago'
-
-		if (isFuture && years === 0 && months === 0 && days === -1) {
-			timeString = `tomorrow ${days}`
-		}	
-
-		if (isFuture && years === 0 && months === 0 && days === -2) {
-			timeString = `in 2 days`
-		}	
-
-		return timeString.trim() || ('today')
-		
+		return `${timeString} ago`
 	}
 
 	function updateElapsedTimes() {
@@ -222,12 +211,13 @@
 
 		updateElapsedTimes()
 		if (timers.length === 1) {
-			intervalId = setInterval(updateElapsedTimes, 1000 * 60)
+			intervalId = setInterval(updateElapsedTimes, REFRESH_INTERVAL)
 		}
 	}
 
 	function editTimer(index) {
 		const timer = timers[index];
+
 		newTimerName = timer.name;
 		newTimerDate = timer.date;
 		newTimerTime = timer.time;
@@ -239,6 +229,7 @@
 
 		function handleSubmit(event) {
 		event.preventDefault();
+
 		if (isEditing) {
 			timers[editingIndex] = {
 				name: newTimerName,
@@ -276,8 +267,9 @@
 		saveToStorage()
 	}
 
-	function handleDateFormatChange(e) {
-		dateFormat = e.target.value
+	function handleDateFormatChange(event) {
+		dateFormat = event.target.value
+
 		localStorage.setItem('momentTrackerDateFormat', dateFormat)
 	}
 
@@ -294,8 +286,9 @@
 		}
 	}
 
-	function handleThemeChange(e) {
-		theme = e.target.value
+	function handleThemeChange(event) {
+		theme = event.target.value
+		
 		if (theme === 'system') {
 			document.documentElement.removeAttribute('data-theme')
 		} else {
