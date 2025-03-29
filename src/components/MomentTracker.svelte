@@ -119,49 +119,52 @@
 
 		const isFuture = from.isBefore(to)
 
-		let years = to.diff(from, 'year');
-		from = from.add(years, 'year');
+		let years = to.diff(from, 'year')
+		from = from.add(years, 'year')
 		
-		let months = to.diff(from, 'month');
-		from = from.add(months, 'month');
+		let months = to.diff(from, 'month')
+		from = from.add(months, 'month')
 		
-		let days = to.diff(from, 'day');
-		from = from.add(days, 'day');
+		let days = to.diff(from, 'day')
+		from = from.add(days, 'day')
 		
 		if (!isFuture) {
-			years = Math.abs(years);
-			months = Math.abs(months);
-			days = Math.abs(days);
+			years = Math.abs(years)
+			months = Math.abs(months)
+			days = Math.abs(days)
 		}
-
-		const parts = [];
-		if (years) parts.push(`${years} year${years > 1 ? 's' : ''}`);
-		if (months) parts.push(`${months} month${months > 1 ? 's' : ''}`);
-		if (days) parts.push(`${days} day${days > 1 ? 's' : ''}`);
-
-		if (hasTime) {
-			
-			let hours = to.diff(from, 'hour');
-			from = from.add(hours, 'hour');
-
-			let minutes = to.diff(from, 'minute');
-			from = from.add(minutes, 'minute');
-
-			if (!isFuture) {
-				hours = Math.abs(hours);
-				minutes = Math.abs(minutes);
-			}
-
-			if (hours) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
-			if (minutes) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
-		}
-
-		let timeString = parts.join(', ')
-
+		
 		if (isFuture && !hasTime && days < 1 && months === 0 && years === 0) {
 			return 'tomorrow'
 		}
 		
+		const parts = []
+
+		if (years) parts.push(`${years} year${years > 1 ? 's' : ''}`)
+		if (months) parts.push(`${months} month${months > 1 ? 's' : ''}`)
+		if (isFuture) {
+			days += 1
+		} 
+		if (days) parts.push(`${days} day${days > 1 ? 's' : ''}`)
+		
+		if (hasTime) {
+			let hours = to.diff(from, 'hour')
+			from = from.add(hours, 'hour')
+			
+			let minutes = to.diff(from, 'minute')
+			from = from.add(minutes, 'minute')
+			
+			if (!isFuture) {
+				hours = Math.abs(hours)
+				minutes = Math.abs(minutes)
+			}
+			
+			if (hours) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`)
+			if (minutes) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`)
+		}
+		
+		let timeString = parts.join(', ')
+
 		if (isFuture) {
 			return `in ${timeString}`
 		}
@@ -220,19 +223,19 @@
 	}
 
 	function editTimer(index) {
-		const timer = timers[index];
+		const timer = timers[index]
 
-		newTimerName = timer.name;
-		newTimerDate = timer.date;
-		newTimerTime = timer.time;
-		editingIndex = index;
-		isEditing = true;
-		isFormVisible = true;
-		setTimeout(() => nameInput.focus(), 100);
+		newTimerName = timer.name
+		newTimerDate = timer.date
+		newTimerTime = timer.time
+		editingIndex = index
+		isEditing = true
+		isFormVisible = true
+		setTimeout(() => nameInput.focus(), 100)
 	}
 
 		function handleSubmit(event) {
-		event.preventDefault();
+		event.preventDefault()
 
 		if (isEditing) {
 			timers[editingIndex] = {
@@ -240,11 +243,11 @@
 				date: newTimerDate,
 				time: newTimerTime || null,
 				elapsedTime: ''
-			};
-			isEditing = false;
-			editingIndex = null;
+			}
+			isEditing = false
+			editingIndex = null
 		} else {
-			if (!newTimerName || !newTimerDate) return;
+			if (!newTimerName || !newTimerDate) return
 			timers = [
 				...timers,
 				{
@@ -253,16 +256,16 @@
 					time: newTimerTime || null,
 					elapsedTime: ''
 				}
-			];
+			]
 		}
-		saveToStorage();
-		newTimerName = '';
-		newTimerDate = '';
-		newTimerTime = '';
-		isFormVisible = false;
-		updateElapsedTimes();
+		saveToStorage()
+		newTimerName = ''
+		newTimerDate = ''
+		newTimerTime = ''
+		isFormVisible = false
+		updateElapsedTimes()
 		if (timers.length === 1) {
-			intervalId = setInterval(updateElapsedTimes, 1000);
+			intervalId = setInterval(updateElapsedTimes, 1000)
 		}
 	}
 
@@ -304,11 +307,11 @@
 	function copyToClipboard() {
 		navigator.clipboard.writeText(shareCode)
 			.then(() => {
-				console.log('Share code copied to clipboard');
+				console.log('Share code copied to clipboard')
 			})
 			.catch((err) => {
-				console.error('Failed to copy share code: ', err);
-			});
+				console.error('Failed to copy share code: ', err)
+			})
 	}
 
 </script>
