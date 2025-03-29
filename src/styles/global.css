@@ -297,6 +297,7 @@ body {
 	justify-content: center;
 	gap: 0.5rem;
 	transition: transform 0.2s ease;
+	margin-bottom: 0.5rem;
 }
 
 .settings-button:hover {

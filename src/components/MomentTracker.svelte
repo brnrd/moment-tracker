@@ -385,7 +385,7 @@
 					bind:value={dateFormat}
 					on:change={handleDateFormatChange}
 				>
-					<option value="default">Current (YYYY-MM-DD)</option>
+					<option value="default">Default (YYYY-MM-DD)</option>
 					<option value="us">US (MM/DD/YYYY)</option>
 					<option value="eu">EU (DD/MM/YYYY)</option>
 				</select>
