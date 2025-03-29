@@ -59,6 +59,9 @@
 	--cta-hover: var(--flexoki-yellow-400);
 	--cta-text: var(--flexoki-paper);
 	
+	--warn-main: var(--flexoki-orange-600);
+	--warn-hover: var(--flexoki-orange-400);
+	
 	--danger-main: var(--flexoki-red-600);
 	--danger-hover: var(--flexoki-red-400);
 
@@ -126,7 +129,6 @@ body {
 
 .timer-item {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
 	padding: 1rem;
 	border-bottom: 1px solid var(--border);
@@ -142,6 +144,11 @@ body {
 	gap: 0.25rem;
 }
 
+.timer-actions {
+    margin-left: auto;
+    display: flex;
+}
+
 .timestamp {
 	font-size: 0.875rem;
 	color: var(--flexoki-500);
@@ -152,16 +159,28 @@ body {
 	font-size: 1rem;
 }
 
+.edit-btn {
+	color: var(--warn-main);
+}
+.edit-btn:hover {
+	color: var(--warn-hover);
+}
+
 .remove-btn {
-	background: none;
-	border: none;
-	font-size: 1.25rem;
-	cursor: pointer;
 	color: var(--danger-main);
 }
 
 .remove-btn:hover {
 	color: var(--danger-hover);
+}
+
+.edit-btn,
+.remove-btn {
+	background: none;
+	border: none;
+	font-size: 1.25rem;
+	cursor: pointer;
+	transition: color 0.2s ease;
 }
 
 .empty {
@@ -208,7 +227,6 @@ body {
 }
 
 .input-row {
-	margin-top: 1rem;
 	display: flex;
 	gap: 1rem;
 }
@@ -265,32 +283,35 @@ body {
 	background: var(--cta-hover);
 }
 
-	.settings-button {
-		width: 100%;
-		padding: 0.5rem;
-		background: var(--background);
-		color: var(--main-text);
-		border: none;
-		border-radius: 0.25rem;
-		font-size: 1rem;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		transition: transform 0.2s ease;
-	}
+.settings-button {
+	width: 100%;
+	padding: 0.5rem;
+	background: var(--background);
+	color: var(--main-text);
+	border: none;
+	border-radius: 0.25rem;
+	font-size: 1rem;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	transition: transform 0.2s ease;
+}
 
-	.settings-button:hover {
-		transform: scale(1.02);
-	}
+.settings-button:hover {
+	transform: scale(1.02);
+}
 
-	.settings-container {
-		max-height: 0;
-		overflow: hidden;
-		transition: max-height 0.3s ease-out;
-	}
+.settings-container {
+	max-height: 0;
+	overflow: hidden;
+	transition: max-height 0.3s ease-out;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
 
-	.settings-container.visible {
-		max-height: 300px;
-	}
+.settings-container.visible {
+	max-height: 300px;
+}

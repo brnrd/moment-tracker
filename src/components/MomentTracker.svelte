@@ -5,6 +5,8 @@
 	let newTimerName = ''
 	let newTimerDate = ''
 	let newTimerTime = ''
+	let isEditing = false
+	let editingIndex = null
 	let nameInput
 	let shareCode = ''
 	let intervalId
@@ -199,9 +201,49 @@
 		}
 	}
 
-	function handleSubmit(event) {
-		event.preventDefault()
-		addTimer()
+	function editTimer(index) {
+		const timer = timers[index];
+		newTimerName = timer.name;
+		newTimerDate = timer.date;
+		newTimerTime = timer.time;
+		editingIndex = index;
+		isEditing = true;
+		isFormVisible = true;
+		setTimeout(() => nameInput.focus(), 100);
+	}
+
+		function handleSubmit(event) {
+		event.preventDefault();
+		if (isEditing) {
+			timers[editingIndex] = {
+				name: newTimerName,
+				date: newTimerDate,
+				time: newTimerTime || null,
+				elapsedTime: ''
+			};
+			isEditing = false;
+			editingIndex = null;
+		} else {
+			if (!newTimerName || !newTimerDate) return;
+			timers = [
+				...timers,
+				{
+					name: newTimerName,
+					date: newTimerDate,
+					time: newTimerTime || null,
+					elapsedTime: ''
+				}
+			];
+		}
+		saveToStorage();
+		newTimerName = '';
+		newTimerDate = '';
+		newTimerTime = '';
+		isFormVisible = false;
+		updateElapsedTimes();
+		if (timers.length === 1) {
+			intervalId = setInterval(updateElapsedTimes, 1000);
+		}
 	}
 
 	function removeTimer(index) {
@@ -251,9 +293,10 @@
 							</span>
 							<span class="elapsed">{timer.elapsedTime}</span>
 						</div>
-						<button class="remove-btn" on:click={() => removeTimer(index)} aria-label="Remove timer"
-							>✕</button
-						>
+						<div class="timer-actions">
+							<button class="edit-btn" on:click={() => editTimer(index)} aria-label="Edit timer">✎</button>
+							<button class="remove-btn" on:click={() => removeTimer(index)} aria-label="Remove timer">✕</button>
+						</div>
 					</li>
 				{/each}
 			</ul>
@@ -314,7 +357,13 @@
 				</div>
 			</div>
 
-			<button type="submit" class="primary-btn">Track a moment</button>
+			<button type="submit" class="primary-btn">
+				{#if isEditing}
+					Update a moment
+				{:else}
+					Track a moment
+				{/if}
+			</button>
 		</form>
 	</section>
 
@@ -327,22 +376,6 @@
 	</button>
 
 	<section class="settings-container" class:visible={isSettingsVisible}>
-		<div class="input-row">
-			<div class="input-block">
-				<label for="share-code" class="input-label">
-					{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
-				</label>
-				<input
-				id="share-code"
-				class="input"
-				type="text"
-				placeholder="Paste your moment code here"
-				bind:value={shareCode}
-				on:change={handleShareCodeChange}
-				/>
-			</div>
-		</div>
-			
 		<div class="input-row">
 			<div class="input-block">
 				<label for="date-format" class="input-label"> Date format </label>
@@ -365,6 +398,22 @@
 					<option value="light">Light</option>
 					<option value="dark">Dark</option>
 				</select>
+			</div>
+		</div>
+
+		<div class="input-row">
+			<div class="input-block">
+				<label for="share-code" class="input-label">
+					{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
+				</label>
+				<input
+				id="share-code"
+				class="input"
+				type="text"
+				placeholder="Paste your moment code here"
+				bind:value={shareCode}
+				on:change={handleShareCodeChange}
+				/>
 			</div>
 		</div>
 	</section>
