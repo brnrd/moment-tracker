@@ -158,6 +158,10 @@
 
 		let timeString = parts.join(', ')
 
+		if (isFuture && !hasTime && days < 1 && months === 0 && years === 0) {
+			return 'tomorrow'
+		}
+		
 		if (isFuture) {
 			return `in ${timeString}`
 		}
@@ -288,7 +292,7 @@
 
 	function handleThemeChange(event) {
 		theme = event.target.value
-		
+
 		if (theme === 'system') {
 			document.documentElement.removeAttribute('data-theme')
 		} else {
