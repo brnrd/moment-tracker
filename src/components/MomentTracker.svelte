@@ -92,7 +92,7 @@
 
 			if (timers.length > 0) {
 				if (intervalId) clearInterval(intervalId)
-				intervalId = setInterval(updateElapsedTimes, 1000)
+				intervalId = setInterval(updateElapsedTimes, 1000 * 60)
 			}
 
 			saveToStorage()
@@ -117,25 +117,38 @@
 			start.setHours(0, 0, 0, 0)
 		}
 
-		const diff = Math.abs(now - start)
+		const diff = Math.floor(now - start)
 		const isFuture = start > now
-		const years = Math.abs(now.getFullYear() - start.getFullYear()) - (isFuture ? 0 : 1)
-		const months = Math.abs(now.getMonth() - start.getMonth())
-		const days = Math.abs(now.getDate() - start.getDate())
+		const years = Math.floor(now.getFullYear() - start.getFullYear())
+		const months = Math.floor(now.getMonth() - start.getMonth())
+		const days = Math.floor(now.getDate() - start.getDate())
 
 		let adjustedYears = years
 		let adjustedMonths = months
 		let adjustedDays = days
 
-		if (days < 0) {
-			adjustedMonths -= 1
-			const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-			adjustedDays = lastMonth.getDate() + days
-		}
-
-		if (months < 0 || (months === 0 && days < 0)) {
-			adjustedYears -= 1
-			adjustedMonths += 12
+		if (!isFuture) {			
+			if (days <= 0) {
+				adjustedMonths -= 1
+				const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+				adjustedDays = lastMonth.getDate() + days
+			}
+			
+			if (months < 0 || (months === 0 && days < 0)) {
+				adjustedYears -= 1
+				adjustedMonths += 12
+			}
+		} else {
+			if (days > 0) {
+				adjustedMonths += 1
+				const lastMonth = new Date(start.getFullYear(), start.getMonth(), 0)
+				adjustedDays = lastMonth.getDate() - days
+			}
+			
+			if (months > 0 || (months === 0 && days > 0)) {
+				adjustedYears += 1
+				adjustedMonths -= 12
+			}
 		}
 
 		let timeString = isFuture ? 'in ' : ''
@@ -155,7 +168,15 @@
 			
 		if (!isFuture) timeString += ' ago'
 
-		return timeString.trim() || (isFuture ? 'in 0 days' : '0 days ago')
+		if (isFuture && years === 0 && months === 0 && days === -1) {
+			timeString = `tomorrow ${days}`
+		}	
+
+		if (isFuture && years === 0 && months === 0 && days === -2) {
+			timeString = `in 2 days`
+		}	
+
+		return timeString.trim() || ('today')
 		
 	}
 
@@ -197,7 +218,7 @@
 
 		updateElapsedTimes()
 		if (timers.length === 1) {
-			intervalId = setInterval(updateElapsedTimes, 1000)
+			intervalId = setInterval(updateElapsedTimes, 1000 * 60)
 		}
 	}
 
