@@ -117,7 +117,7 @@
 
 		const diff = Math.abs(now - start)
 		const isFuture = start > now
-		const years = Math.abs(now.getFullYear() - start.getFullYear())
+		const years = Math.abs(now.getFullYear() - start.getFullYear()) - (isFuture ? 0 : 1)
 		const months = Math.abs(now.getMonth() - start.getMonth())
 		const days = Math.abs(now.getDate() - start.getDate())
 
