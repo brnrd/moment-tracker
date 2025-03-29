@@ -142,9 +142,7 @@
 
 		if (years) parts.push(`${years} year${years > 1 ? 's' : ''}`)
 		if (months) parts.push(`${months} month${months > 1 ? 's' : ''}`)
-		if (isFuture) {
-			days += 1
-		} 
+		
 		if (days) parts.push(`${days} day${days > 1 ? 's' : ''}`)
 		
 		if (hasTime) {
