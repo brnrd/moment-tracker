@@ -1,5 +1,4 @@
 <script>
-	import './MomentTracker.css'
 	import { onMount } from 'svelte'
 
 	let timers = []
@@ -280,16 +279,22 @@
 
 	<section class="form-container" class:visible={isFormVisible || timers.length === 0}>
 		<form class="add-timer-form" on:submit={handleSubmit}>
-			<label for="timer-name" class="input-label">Moment name</label>
-			<input
-				id="timer-name"
-				class="input"
-				type="text"
-				placeholder="Moment name"
-				bind:this={nameInput}
-				bind:value={newTimerName}
-				required
-			/>
+			<div class="input-row">
+				<div class="input-block">
+
+					<label for="timer-name" class="input-label">Moment name</label>
+					<input
+					id="timer-name"
+					class="input"
+					type="text"
+					placeholder="Moment name"
+					bind:this={nameInput}
+					bind:value={newTimerName}
+					required
+					/>
+				</div>
+			</div>
+			
 
 			<div class="input-row">
 				<div class="input-block">
@@ -322,20 +327,22 @@
 	</button>
 
 	<section class="settings-container" class:visible={isSettingsVisible}>
-		<div class="share-block">
-			<label for="share-code" class="input-label">
-				{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
-			</label>
-			<input
+		<div class="input-row">
+			<div class="input-block">
+				<label for="share-code" class="input-label">
+					{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
+				</label>
+				<input
 				id="share-code"
 				class="input"
 				type="text"
 				placeholder="Paste your moment code here"
 				bind:value={shareCode}
 				on:change={handleShareCodeChange}
-			/>
+				/>
+			</div>
 		</div>
-
+			
 		<div class="input-row">
 			<div class="input-block">
 				<label for="date-format" class="input-label"> Date format </label>
@@ -362,91 +369,3 @@
 		</div>
 	</section>
 </main>
-
-<style>
-	.input-row {
-		margin-top: 0;
-		display: flex;
-		gap: 1rem;
-	}
-
-	.input-block {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.input-label {
-		font-weight: 500;
-		font-size: 0.95rem;
-	}
-
-	.add-button {
-		width: 3rem;
-		height: 3rem;
-		border-radius: 50%;
-		background: var(--button-bg);
-		color: var(--button-text);
-		border: none;
-		font-size: 1.5rem;
-		cursor: pointer;
-		position: relative;
-		margin: 1rem auto;
-		display: block;
-		transition: transform 0.2s ease;
-	}
-
-	.add-button:hover {
-		transform: scale(1.1);
-	}
-
-	.form-container {
-		max-height: 0;
-		overflow: hidden;
-		transition: max-height 0.3s ease-out;
-	}
-
-	.form-container.visible {
-		max-height: 300px;
-	}
-
-	.add-timer-form {
-		margin-top: 0;
-		padding-top: 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.settings-button {
-		width: 100%;
-		padding: 0.5rem;
-		margin: 1rem 0;
-		background: var(--bg-bg);
-		color: var(--text);
-		border: none;
-		border-radius: 0.25rem;
-		font-size: 1rem;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.5rem;
-		transition: transform 0.2s ease;
-	}
-
-	.settings-button:hover {
-		transform: scale(1.02);
-	}
-
-	.settings-container {
-		max-height: 0;
-		overflow: hidden;
-		transition: max-height 0.3s ease-out;
-	}
-
-	.settings-container.visible {
-		max-height: 300px;
-	}
-</style>
