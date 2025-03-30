@@ -459,7 +459,9 @@
 						on:change={handleShareCodeChange}
 						on:focus={(e) => e.target.select()}
 					/>
-					<button type="button" class="copy-btn" on:click={copyToClipboard} aria-label="Copy share code">Copy</button>
+					{#if shareCode}
+						<button type="button" class="copy-btn" on:click={copyToClipboard} aria-label="Copy share code">Copy</button>
+					{/if}
 				</div>
 			</div>
 		</div>
