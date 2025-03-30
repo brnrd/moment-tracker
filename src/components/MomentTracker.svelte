@@ -113,9 +113,13 @@
 		}
 	}
 
-	function calculateElapsedTime(start, hasTime) {
+	function generateDisplayTime(momentTime, hasTime) {
 		let from = dayjs()
-		const to = dayjs(start)
+		let to = dayjs(momentTime)
+		
+		if (!hasTime) {
+			to = to.set('hour', 0).set('minute', 0).set('second', 0)
+		}
 
 		const isFuture = from.isBefore(to)
 
@@ -137,12 +141,15 @@
 		if (isFuture && !hasTime && days < 1 && months === 0 && years === 0) {
 			return 'tomorrow'
 		}
-		
+
+		if (isFuture) {
+			days += 1;
+		}
+
 		const parts = []
 
 		if (years) parts.push(`${years} year${years > 1 ? 's' : ''}`)
 		if (months) parts.push(`${months} month${months > 1 ? 's' : ''}`)
-		
 		if (days) parts.push(`${days} day${days > 1 ? 's' : ''}`)
 		
 		if (hasTime) {
@@ -189,7 +196,7 @@
 
 			return {
 				...timer,
-				elapsedTime: calculateElapsedTime(date, !!timer.time)
+				elapsedTime: generateDisplayTime(date, !!timer.time)
 			}
 		})
 	}
