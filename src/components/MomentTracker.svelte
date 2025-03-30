@@ -4,10 +4,10 @@
 
 	const REFRESH_INTERVAL = 1000 * 60 // 1 minute
 
-	let timers = []
-	let newTimerName = ''
-	let newTimerDate = ''
-	let newTimerTime = ''
+	let moments = []
+	let newMomentName = ''
+	let newMomentDate = ''
+	let newMomentTime = ''
 	let isEditing = false
 	let editingIndex = null
 	let nameInput
@@ -29,7 +29,7 @@
 		const savedCode = localStorage.getItem('momentTrackerData')
 
 		if (savedCode) {
-			loadTimers(savedCode, false)
+			loadMoments(savedCode, false)
 		}
 
 		// Load saved theme preference
@@ -47,27 +47,27 @@
 	})
 
 	function saveToStorage() {
-		if (timers.length === 0) {
+		if (moments.length === 0) {
 			localStorage.removeItem('momentTrackerData')
 			shareCode = ''
 			return
 		}
 
-		const encoded = encodeTimers()
+		const encoded = encodeMoments()
 
 		localStorage.setItem('momentTrackerData', encoded)
 		shareCode = encoded
 	}
 
-	function encodeTimers() {
-		return btoa(timers.map((timer) => `${timer.name}|${timer.date}|${timer.time || ''}`).join('~~'))
+	function encodeMoments() {
+		return btoa(moments.map((moment) => `${moment.name}|${moment.date}|${moment.time || ''}`).join('~~'))
 	}
 
-	function loadTimers(code, askForMerge = true) {
+	function loadMoments(code, askForMerge = true) {
 		try {
 			const decoded = atob(code.trim())
-			const newTimers = decoded.split('~~').map((timer) => {
-				const [name, date, time] = timer.split('|')
+			const newMoments = decoded.split('~~').map((moment) => {
+				const [name, date, time] = moment.split('|')
 				return {
 					name,
 					date,
@@ -76,24 +76,24 @@
 				}
 			})
 
-			if (askForMerge && timers.length > 0) {
+			if (askForMerge && moments.length > 0) {
 				const choice = confirm(
 					'Do you want to add these moments to your existing ones? Click OK to add, Cancel to replace.'
 				)
 				if (choice) {
-					// Merge timers
-					timers = [...timers, ...newTimers]
+					// Merge moments
+					moments = [...moments, ...newMoments]
 				} else {
-					// Replace timers
-					timers = newTimers
+					// Replace moments
+					moments = newMoments
 				}
 			} else {
-				timers = newTimers
+				moments = newMoments
 			}
 
 			updateElapsedTimes()
 
-			if (timers.length > 0) {
+			if (moments.length > 0) {
 				if (intervalId) clearInterval(intervalId)
 				intervalId = setInterval(updateElapsedTimes, REFRESH_INTERVAL)
 			}
@@ -101,23 +101,23 @@
 			saveToStorage()
 		} catch (event) {
 			alert('Invalid code')
-			shareCode = timers.length > 0 ? encodeTimers() : ''
+			shareCode = moments.length > 0 ? encodeMoments() : ''
 		}
 	}
 
 	function handleShareCodeChange() {
 		if (!shareCode) return
 
-		if (shareCode !== encodeTimers()) {
-			loadTimers(shareCode)
+		if (shareCode !== encodeMoments()) {
+			loadMoments(shareCode)
 		}
 	}
 
-	function generateDisplayTime(momentTime, hasTime) {
+	function generateDisplayString(momentTime, momentHasTime) {
 		let from = dayjs()
 		let to = dayjs(momentTime)
 		
-		if (!hasTime) {
+		if (!momentHasTime) {
 			to = to.set('hour', 0).set('minute', 0).set('second', 0)
 		}
 
@@ -138,7 +138,7 @@
 			days = Math.abs(days)
 		}
 		
-		if (isFuture && !hasTime && days < 1 && months === 0 && years === 0) {
+		if (isFuture && !momentHasTime && days < 1 && months === 0 && years === 0) {
 			return 'tomorrow'
 		}
 
@@ -152,7 +152,7 @@
 		if (months) parts.push(`${months} month${months > 1 ? 's' : ''}`)
 		if (days) parts.push(`${days} day${days > 1 ? 's' : ''}`)
 		
-		if (hasTime) {
+		if (momentHasTime) {
 			let hours = to.diff(from, 'hour')
 			from = from.add(hours, 'hour')
 			
@@ -174,11 +174,11 @@
 			return `in ${timeString}`
 		}
 
-		if (timeString === '' && !hasTime) {
+		if (timeString === '' && !momentHasTime) {
 			return 'today'
 		}
 
-		if (timeString === '' && hasTime) {
+		if (timeString === '' && momentHasTime) {
 			return 'now'
 		}
 		
@@ -186,96 +186,70 @@
 	}
 
 	function updateElapsedTimes() {
-		timers = timers.map((timer) => {
-			const date = new Date(timer.date)
+		moments = moments.map((moment) => {
+			const date = new Date(moment.date)
 
-			if (timer.time) {
-				const [hours, minutes] = timer.time.split(':')
+			if (moment.time) {
+				const [hours, minutes] = moment.time.split(':')
 				date.setHours(hours, minutes, 0, 0)
 			}
 
 			return {
-				...timer,
-				elapsedTime: generateDisplayTime(date, !!timer.time)
+				...moment,
+				elapsedTime: generateDisplayString(date, !!moment.time)
 			}
 		})
 	}
 
-	function addTimer() {
-		if (!newTimerName || !newTimerDate) return
+	function editMoment(index) {
+		const moment = moments[index]
 
-		timers = [
-			...timers,
-			{
-				name: newTimerName,
-				date: newTimerDate,
-				time: newTimerTime || null,
-				elapsedTime: ''
-			}
-		]
-
-		saveToStorage()
-
-		newTimerName = ''
-		newTimerDate = ''
-		newTimerTime = ''
-		isFormVisible = false
-
-		updateElapsedTimes()
-		if (timers.length === 1) {
-			intervalId = setInterval(updateElapsedTimes, REFRESH_INTERVAL)
-		}
-	}
-
-	function editTimer(index) {
-		const timer = timers[index]
-
-		newTimerName = timer.name
-		newTimerDate = timer.date
-		newTimerTime = timer.time
+		newMomentName = moment.name
+		newMomentDate = moment.date
+		newMomentTime = moment.time
 		editingIndex = index
 		isEditing = true
 		isFormVisible = true
 		setTimeout(() => nameInput.focus(), 100)
 	}
 
-		function handleSubmit(event) {
+	function handleSubmit(event) {
 		event.preventDefault()
 
 		if (isEditing) {
-			timers[editingIndex] = {
-				name: newTimerName,
-				date: newTimerDate,
-				time: newTimerTime || null,
+			moments[editingIndex] = {
+				name: newMomentName,
+				date: newMomentDate,
+				time: newMomentTime || null,
 				elapsedTime: ''
 			}
 			isEditing = false
 			editingIndex = null
 		} else {
-			if (!newTimerName || !newTimerDate) return
-			timers = [
-				...timers,
+			if (!newMomentName || !newMomentDate) return
+			moments = [
+				...moments,
 				{
-					name: newTimerName,
-					date: newTimerDate,
-					time: newTimerTime || null,
+					name: newMomentName,
+					date: newMomentDate,
+					time: newMomentTime || null,
 					elapsedTime: ''
 				}
 			]
 		}
 		saveToStorage()
-		newTimerName = ''
-		newTimerDate = ''
-		newTimerTime = ''
+		newMomentName = ''
+		newMomentDate = ''
+		newMomentTime = ''
 		isFormVisible = false
 		updateElapsedTimes()
-		if (timers.length === 1) {
+		if (moments.length === 1) {
 			intervalId = setInterval(updateElapsedTimes, 1000)
 		}
 	}
 
-	function removeTimer(index) {
-		timers = timers.filter((_, i) => i !== index)
+	function removeMoment(index) {
+		moments = moments.filter((_, i) => i !== index)
 		saveToStorage()
 	}
 
@@ -324,21 +298,21 @@
 </script>
 
 <main class="app">
-	{#if timers.length > 0}
-		<section aria-label="Timer list">
-			<ul class="timer-list">
-				{#each timers as timer, index}
-					<li class="timer-item">
-						<div class="timer-meta">
-							<strong>{timer.name}</strong>
+	{#if moments.length > 0}
+		<section aria-label="Moment list">
+			<ul class="moment-list">
+				{#each moments as moment, index}
+					<li class="moment-item">
+						<div class="moment-meta">
+							<strong>{moment.name}</strong>
 							<span class="timestamp">
-								({formatDate(timer.date, dateFormat)}{timer.time ? ` ${timer.time}` : ''})
+								({formatDate(moment.date, dateFormat)}{moment.time ? ` ${moment.time}` : ''})
 							</span>
-							<span class="elapsed">{timer.elapsedTime}</span>
+							<span class="elapsed">{moment.elapsedTime}</span>
 						</div>
-						<div class="timer-actions">
-							<button class="edit-btn" on:click={() => editTimer(index)} aria-label="Edit timer">✎</button>
-							<button class="remove-btn" on:click={() => removeTimer(index)} aria-label="Remove timer">✕</button>
+						<div class="moment-actions">
+							<button class="edit-btn" on:click={() => editMoment(index)} aria-label="Edit moment">✎</button>
+							<button class="remove-btn" on:click={() => removeMoment(index)} aria-label="Remove moment">✕</button>
 						</div>
 					</li>
 				{/each}
@@ -362,17 +336,17 @@
 	</button>
 
 	<section class="form-container" class:visible={isFormVisible}>
-		<form class="add-timer-form" on:submit={handleSubmit}>
+		<form class="add-moment-form" on:submit={handleSubmit}>
 			<div class="input-row">
 				<div class="input-block">
-					<label for="timer-name" class="input-label">Moment name</label>
+					<label for="moment-name" class="input-label">Moment name</label>
 					<input
-					id="timer-name"
+					id="moment-name"
 					class="input"
 					type="text"
 					placeholder="Moment name"
 					bind:this={nameInput}
-					bind:value={newTimerName}
+					bind:value={newMomentName}
 					required
 					/>
 				</div>
@@ -381,17 +355,17 @@
 
 			<div class="input-row">
 				<div class="input-block">
-					<label for="timer-date" class="input-label">Date (past or future)</label>
-					<input id="timer-date" class="input" type="date" bind:value={newTimerDate} required />
+					<label for="moment-date" class="input-label">Date (past or future)</label>
+					<input id="moment-date" class="input" type="date" bind:value={newMomentDate} required />
 				</div>
 
 				<div class="input-block">
-					<label for="timer-time" class="input-label">Time</label>
+					<label for="moment-time" class="input-label">Time</label>
 					<input
-						id="timer-time"
+						id="moment-time"
 						class="input"
 						type="time"
-						bind:value={newTimerTime}
+						bind:value={newMomentTime}
 						placeholder="Optional time"
 					/>
 				</div>
@@ -445,7 +419,7 @@
 		<div class="input-row">
 			<div class="input-block">
 				<label for="share-code" class="input-label">
-					{timers.length > 0 ? 'Share or save your moments' : 'Import moments'}
+					{moments.length > 0 ? 'Share or save your moments' : 'Import moments'}
 				</label>
 				<div class="share-code-wrapper">
 					<input
