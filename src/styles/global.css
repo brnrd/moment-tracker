@@ -187,7 +187,7 @@ body {
 
 .empty {
 	text-align: center;
-	margin-top: 2rem;
+	margin-bottom: 2rem;
 }
 
 .add-button {
@@ -203,7 +203,7 @@ body {
 	margin: 1rem auto;
 	display: block;
 	transition: transform 1s ease;
-	transition: background-color 300ms linear
+	transition: background-color 300ms linear;
 	padding: 0 0.1rem;
 }
 

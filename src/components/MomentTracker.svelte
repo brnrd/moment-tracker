@@ -348,22 +348,20 @@
 		<p class="empty">No moment yet. Add one to get started!</p>
 	{/if}
 
-	{#if timers.length > 0}
-		<button
-			class="add-button"
-			on:click={() => {
-				isFormVisible = !isFormVisible
-				if (isFormVisible) {
-					setTimeout(() => nameInput.focus(), 100)
-				}
-			}}
-			aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
-		>
-			{isFormVisible ? '−' : '+'}
-		</button>
-	{/if}
+	<button
+		class="add-button"
+		on:click={() => {
+			isFormVisible = !isFormVisible
+			if (isFormVisible) {
+				setTimeout(() => nameInput.focus(), 100)
+			}
+		}}
+		aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
+	>
+		{isFormVisible ? '−' : '+'}
+	</button>
 
-	<section class="form-container" class:visible={isFormVisible || timers.length === 0}>
+	<section class="form-container" class:visible={isFormVisible}>
 		<form class="add-timer-form" on:submit={handleSubmit}>
 			<div class="input-row">
 				<div class="input-block">
