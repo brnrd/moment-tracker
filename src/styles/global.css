@@ -181,6 +181,8 @@ body {
 	font-size: 1.25rem;
 	cursor: pointer;
 	transition: color 0.2s ease;
+	padding: 0;
+	margin-left: 1rem;
 }
 
 .empty {
@@ -202,6 +204,7 @@ body {
 	display: block;
 	transition: transform 1s ease;
 	transition: background-color 300ms linear
+	padding: 0 0.1rem;
 }
 
 .add-button:hover {
