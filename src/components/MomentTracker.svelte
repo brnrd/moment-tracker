@@ -293,8 +293,10 @@
 				return date.toLocaleDateString('en-US')
 			case 'eu':
 				return date.toLocaleDateString('en-GB')
+			case 'logical':
+				return dateStr
 			default:
-				return dateStr // Default format
+				return date.toLocaleDateString()
 		}
 	}
 
@@ -365,7 +367,6 @@
 		<form class="add-timer-form" on:submit={handleSubmit}>
 			<div class="input-row">
 				<div class="input-block">
-
 					<label for="timer-name" class="input-label">Moment name</label>
 					<input
 					id="timer-name"
@@ -419,14 +420,15 @@
 	<section class="settings-container" class:visible={isSettingsVisible}>
 		<div class="input-row">
 			<div class="input-block">
-				<label for="date-format" class="input-label"> Date format </label>
+				<label for="date-format" class="input-label">Date format </label>
 				<select
 					id="date-format"
 					class="input"
 					bind:value={dateFormat}
 					on:change={handleDateFormatChange}
 				>
-					<option value="default">Default (YYYY-MM-DD)</option>
+					<option value="default">Default</option>
+					<option value="logical">Logical (YYYY-MM-DD)</option>
 					<option value="us">US (MM/DD/YYYY)</option>
 					<option value="eu">EU (DD/MM/YYYY)</option>
 				</select>
