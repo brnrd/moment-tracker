@@ -107,16 +107,26 @@
 html,
 body {
 	margin: 0;
-	width: 100%;
+	padding: 0;
 	height: 100%;
+}
+
+body {
 	background: var(--background);
 	color: var(--text-main);
+	padding-top: 2rem;
 }
 
 .app {
 	max-width: 600px;
 	margin: 0 auto;
 	padding: 2rem 1rem;
+}
+
+.title {
+	text-align: center;
+	margin-bottom: 2rem;
+	margin-top: 0;
 }
 
 .moment-list {
