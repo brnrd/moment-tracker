@@ -17,6 +17,8 @@
 	let theme = 'system'
 	let isFormVisible = false
 	let isSettingsVisible = false
+	let isEditMode = false
+	let draggedIndex = null
 
 	if (typeof localStorage !== 'undefined' && localStorage.getItem('momentTrackerDateFormat')) {
 		dateFormat = localStorage.getItem('momentTrackerDateFormat')
@@ -295,6 +297,30 @@
 			})
 	}
 
+	function handleDragStart(index) {
+		draggedIndex = index
+	}
+
+	function handleDragOver(event, index) {
+		event.preventDefault()
+	}
+
+	function handleDrop(event, index) {
+		event.preventDefault()
+		if (draggedIndex === null || draggedIndex === index) return
+
+		const newMoments = [...moments]
+		const [draggedMoment] = newMoments.splice(draggedIndex, 1)
+		newMoments.splice(index, 0, draggedMoment)
+		moments = newMoments
+		draggedIndex = null
+		saveToStorage()
+	}
+
+	function handleDragEnd() {
+		draggedIndex = null
+	}
+
 </script>
 
 <main class="app">
@@ -302,7 +328,15 @@
 		<section aria-label="Moment list">
 			<ul class="moment-list">
 				{#each moments as moment, index}
-					<li class="moment-item">
+					<li 
+						class="moment-item"
+						class:draggable={isEditMode}
+						draggable={isEditMode}
+						on:dragstart={() => handleDragStart(index)}
+						on:dragover={(e) => handleDragOver(e, index)}
+						on:drop={(e) => handleDrop(e, index)}
+						on:dragend={handleDragEnd}
+					>
 						<div class="moment-meta">
 							<strong>{moment.name}</strong>
 							<span class="timestamp">
@@ -310,10 +344,12 @@
 							</span>
 							<span class="elapsed">{moment.elapsedTime}</span>
 						</div>
-						<div class="moment-actions">
-							<button class="edit-btn" on:click={() => editMoment(index)} aria-label="Edit moment">✎</button>
-							<button class="remove-btn" on:click={() => removeMoment(index)} aria-label="Remove moment">✕</button>
-						</div>
+						{#if isEditMode}
+							<div class="moment-actions">
+								<button class="edit-btn" on:click={() => editMoment(index)} aria-label="Edit moment">✎</button>
+								<button class="remove-btn" on:click={() => removeMoment(index)} aria-label="Remove moment">✕</button>
+							</div>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -322,18 +358,22 @@
 		<p class="empty">No moment yet. Add one to get started!</p>
 	{/if}
 
-	<button
-		class="add-button"
-		on:click={() => {
-			isFormVisible = !isFormVisible
-			if (isFormVisible) {
-				setTimeout(() => nameInput.focus(), 100)
-			}
-		}}
-		aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
-	>
-		{isFormVisible ? '−' : '+'}
-	</button>
+
+	<div class="action-row">
+		<button
+			class="add-button"
+			on:click={() => {
+				isFormVisible = !isFormVisible
+				if (isFormVisible) {
+					setTimeout(() => nameInput.focus(), 100)
+				}
+			}}
+			aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
+		>
+			{isFormVisible ? '−' : '+'}
+		</button>
+	</div>
+	
 
 	<section class="form-container" class:visible={isFormVisible}>
 		<form class="add-moment-form" on:submit={handleSubmit}>
@@ -381,13 +421,26 @@
 		</form>
 	</section>
 
-	<button
-		class="settings-button"
-		on:click={() => (isSettingsVisible = !isSettingsVisible)}
-		aria-label={isSettingsVisible ? 'Hide settings' : 'Show settings'}
-	>
-		Settings {isSettingsVisible ? '−' : '+'}
-	</button>
+	<div class="action-row">
+		<button
+			class="settings-button"
+			on:click={() => (isSettingsVisible = !isSettingsVisible)}
+			aria-label={isSettingsVisible ? 'Hide settings' : 'Show settings'}
+		>
+			Settings {isSettingsVisible ? '−' : '+'}
+		</button>
+		{#if moments.length > 0}
+			<button
+				class="settings-button"
+				class:active={isEditMode}
+				on:click={() => isEditMode = !isEditMode}
+				aria-label={isEditMode ? 'Exit edit mode' : 'Enter edit mode'}
+			>
+				{isEditMode ? 'Done' : 'Edit'}
+			</button>
+		{/if}
+	</div>
+	
 
 	<section class="settings-container" class:visible={isSettingsVisible}>
 		<div class="input-row">

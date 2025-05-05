@@ -148,6 +148,14 @@ body {
 	border-bottom: none;
 }
 
+.moment-item.draggable {
+	cursor: move;
+}
+
+.moment-item.draggable:hover {
+	background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+
 .moment-meta {
 	display: flex;
 	flex-direction: column;
@@ -293,6 +301,13 @@ body {
 
 .primary-btn:hover {
 	background: var(--cta-hover);
+}
+
+.action-row {
+	display: flex;
+	gap: 1rem;
+	justify-content: center;
+	margin-bottom: 1rem;
 }
 
 .settings-button {
