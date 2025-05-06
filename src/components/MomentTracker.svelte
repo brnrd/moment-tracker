@@ -324,6 +324,77 @@
 </script>
 
 <main class="app">
+	<div class="action-row">
+		<button
+			class="settings-button"
+			on:click={() => (isSettingsVisible = !isSettingsVisible)}
+			aria-label={isSettingsVisible ? 'Hide settings' : 'Show settings'}
+		>
+			Settings {isSettingsVisible ? '−' : '+'}
+		</button>
+		{#if moments.length > 0}
+			<button
+				class="settings-button"
+				class:active={isEditMode}
+				on:click={() => isEditMode = !isEditMode}
+				aria-label={isEditMode ? 'Exit edit mode' : 'Enter edit mode'}
+			>
+				{isEditMode ? 'Done' : 'Edit'}
+			</button>
+		{/if}
+	</div>
+	
+
+	<section class="settings-container" class:visible={isSettingsVisible}>
+		<div class="input-row">
+			<div class="input-block">
+				<label for="date-format" class="input-label">Date format </label>
+				<select
+					id="date-format"
+					class="input"
+					bind:value={dateFormat}
+					on:change={handleDateFormatChange}
+				>
+					<option value="default">Default</option>
+					<option value="logical">Logical (YYYY-MM-DD)</option>
+					<option value="us">US (MM/DD/YYYY)</option>
+					<option value="eu">EU (DD/MM/YYYY)</option>
+				</select>
+			</div>
+
+			<div class="input-block">
+				<label for="theme" class="input-label"> Theme </label>
+				<select id="theme" class="input" bind:value={theme} on:change={handleThemeChange}>
+					<option value="system">System preference</option>
+					<option value="light">Light</option>
+					<option value="dark">Dark</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="input-row">
+			<div class="input-block">
+				<label for="share-code" class="input-label">
+					{moments.length > 0 ? 'Share or save your moments' : 'Import moments'}
+				</label>
+				<div class="share-code-wrapper">
+					<input
+						id="share-code"
+						class="input share-input"
+						type="text"
+						placeholder="Paste your moment code here"
+						bind:value={shareCode}
+						on:change={handleShareCodeChange}
+						on:focus={(e) => e.target.select()}
+					/>
+					{#if shareCode}
+						<button type="button" class="copy-btn" on:click={copyToClipboard} aria-label="Copy share code">Copy</button>
+					{/if}
+				</div>
+			</div>
+		</div>
+	</section>
+	
 	{#if moments.length > 0}
 		<section aria-label="Moment list">
 			<ul class="moment-list">
@@ -419,76 +490,5 @@
 				{/if}
 			</button>
 		</form>
-	</section>
-
-	<div class="action-row">
-		<button
-			class="settings-button"
-			on:click={() => (isSettingsVisible = !isSettingsVisible)}
-			aria-label={isSettingsVisible ? 'Hide settings' : 'Show settings'}
-		>
-			Settings {isSettingsVisible ? '−' : '+'}
-		</button>
-		{#if moments.length > 0}
-			<button
-				class="settings-button"
-				class:active={isEditMode}
-				on:click={() => isEditMode = !isEditMode}
-				aria-label={isEditMode ? 'Exit edit mode' : 'Enter edit mode'}
-			>
-				{isEditMode ? 'Done' : 'Edit'}
-			</button>
-		{/if}
-	</div>
-	
-
-	<section class="settings-container" class:visible={isSettingsVisible}>
-		<div class="input-row">
-			<div class="input-block">
-				<label for="date-format" class="input-label">Date format </label>
-				<select
-					id="date-format"
-					class="input"
-					bind:value={dateFormat}
-					on:change={handleDateFormatChange}
-				>
-					<option value="default">Default</option>
-					<option value="logical">Logical (YYYY-MM-DD)</option>
-					<option value="us">US (MM/DD/YYYY)</option>
-					<option value="eu">EU (DD/MM/YYYY)</option>
-				</select>
-			</div>
-
-			<div class="input-block">
-				<label for="theme" class="input-label"> Theme </label>
-				<select id="theme" class="input" bind:value={theme} on:change={handleThemeChange}>
-					<option value="system">System preference</option>
-					<option value="light">Light</option>
-					<option value="dark">Dark</option>
-				</select>
-			</div>
-		</div>
-
-		<div class="input-row">
-			<div class="input-block">
-				<label for="share-code" class="input-label">
-					{moments.length > 0 ? 'Share or save your moments' : 'Import moments'}
-				</label>
-				<div class="share-code-wrapper">
-					<input
-						id="share-code"
-						class="input share-input"
-						type="text"
-						placeholder="Paste your moment code here"
-						bind:value={shareCode}
-						on:change={handleShareCodeChange}
-						on:focus={(e) => e.target.select()}
-					/>
-					{#if shareCode}
-						<button type="button" class="copy-btn" on:click={copyToClipboard} aria-label="Copy share code">Copy</button>
-					{/if}
-				</div>
-			</div>
-		</div>
 	</section>
 </main>
