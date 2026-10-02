@@ -284,28 +284,33 @@
 	}
 </script>
 
-<main class="app">
-	<div class="action-row app-toolbar">
-		<button
-			class="settings-button"
-			on:click={() => {
-				isSettingsVisible = !isSettingsVisible
-				if (isSettingsVisible) shareCode = encode()
-			}}
-			aria-expanded={isSettingsVisible}>Settings {isSettingsVisible ? '−' : '+'}</button
-		>
-		{#if moments.length}<button
+<div class="app">
+	<div class="collection-header">
+		<div class="collection-title">
+			<h2>{showArchive ? 'The archive' : 'Your moments'}</h2>
+			<span class="collection-count">{String(visibleMoments.length).padStart(2, '0')}</span>
+		</div>
+		<div class="action-row app-toolbar">
+			<button
 				class="settings-button"
-				class:active={isEditMode}
-				on:click={() => (isEditMode = !isEditMode)}>{isEditMode ? 'Done' : 'Edit'}</button
-			>{/if}
-		{#if archivedMoments.length || showArchive}<button
-				class="settings-button"
-				on:click={() => (showArchive = !showArchive)}
-				>{showArchive ? 'Back to moments' : `Archive (${archivedMoments.length})`}</button
-			>{/if}
+				on:click={() => {
+					isSettingsVisible = !isSettingsVisible
+					if (isSettingsVisible) shareCode = encode()
+				}}
+				aria-expanded={isSettingsVisible}>Settings {isSettingsVisible ? '−' : '+'}</button
+			>
+			{#if moments.length}<button
+					class="settings-button"
+					class:active={isEditMode}
+					on:click={() => (isEditMode = !isEditMode)}>{isEditMode ? 'Done' : 'Edit'}</button
+				>{/if}
+			{#if archivedMoments.length || showArchive}<button
+					class="settings-button"
+					on:click={() => (showArchive = !showArchive)}
+					>{showArchive ? 'Back to moments' : `Archive (${archivedMoments.length})`}</button
+				>{/if}
+		</div>
 	</div>
-
 	{#if status || undoState?.type === 'delete'}
 		<div class="feedback" role="status">
 			<span>{status}</span>{#if undoState?.type === 'delete'}<button
@@ -320,6 +325,10 @@
 
 	{#if isSettingsVisible}
 		<section class="settings-panel" aria-label="Settings">
+			<div class="panel-heading">
+				<h3>Make it yours.</h3>
+				<span class="eyebrow">Preferences & backups</span>
+			</div>
 			<div class="input-row">
 				<div class="input-block">
 					<label for="date-format" class="input-label">Date format</label><select
@@ -448,6 +457,7 @@
 					<li
 						class="moment-item"
 						class:draggable={isEditMode}
+						style={`--card-index: ${index}`}
 						draggable={isEditMode}
 						on:dragstart={() => (draggedId = moment.id)}
 						on:dragover={(event) => event.preventDefault()}
@@ -459,7 +469,12 @@
 						on:dragend={() => (draggedId = null)}
 					>
 						<div class="moment-meta">
-							<strong>{moment.name}</strong><span class="timestamp"
+							<div class="moment-heading">
+								<span class="moment-index" aria-hidden="true"
+									>{String(index + 1).padStart(2, '0')}</span
+								><strong>{moment.name}</strong>
+							</div>
+							<span class="timestamp"
 								>{formatDate(moment.date)}{moment.time ? ` ${moment.time}` : ''}</span
 							>
 							<button
@@ -467,8 +482,13 @@
 								on:click={() => toggleDisplay(moment)}
 								aria-label={`${elapsed(moment, now, mode(moment, displays, now))}. Show ${displayLabel(nextDisplay(moment, now, mode(moment, displays, now)))}`}
 							>
-								<span>{elapsed(moment, now, mode(moment, displays, now))}</span><span
-									class="display-hint"
+								<span
+									class="elapsed-value"
+									class:calendar={mode(moment, displays, now) === 'calendar'}
+									>{#each elapsed(moment, now, mode(moment, displays, now)).split(/(\d[\d,]*)/) as part, partIndex (partIndex)}<span
+											class:time-number={/^\d/.test(part)}>{part}</span
+										>{/each}</span
+								><span class="display-hint"
 									>Show {displayLabel(nextDisplay(moment, now, mode(moment, displays, now)))} ↻</span
 								>
 							</button>
@@ -566,41 +586,49 @@
 				}
 			}}
 			aria-label={isFormVisible ? 'Close moment form' : 'Add a moment'}
-			aria-expanded={isFormVisible}>{isFormVisible ? '−' : '+'}</button
+			aria-expanded={isFormVisible}
+			><span aria-hidden="true">{isFormVisible ? '−' : '+'}</span>
+			{isFormVisible ? 'Close form' : 'Keep a new moment'}</button
 		>
 	</div>
 	{#if isFormVisible}
-		<section aria-label={editingId ? 'Edit moment' : 'Add moment'}>
+		<section class="form-panel" aria-label={editingId ? 'Edit moment' : 'Add moment'}>
+			<div class="panel-heading">
+				<h3>{editingId ? 'A little revision.' : 'Start with a date.'}</h3>
+				<span class="eyebrow">The rest is your story</span>
+			</div>
 			<form class="add-moment-form" on:submit={submit}>
-				<div class="input-block">
-					<label for="moment-name" class="input-label">Moment name</label><input
-						id="moment-name"
-						class="input"
-						bind:this={nameInput}
-						bind:value={name}
-						required
-					/>
-				</div>
-				<div class="input-row">
+				<div class="moment-details">
 					<div class="input-block">
-						<label for="moment-date" class="input-label">Date (past or future)</label><input
-							id="moment-date"
+						<label for="moment-name" class="input-label">Moment name</label><input
+							id="moment-name"
 							class="input"
-							type="date"
-							bind:value={date}
+							bind:this={nameInput}
+							bind:value={name}
 							required
 						/>
 					</div>
-					<div class="input-block">
-						<label for="moment-time" class="input-label">Time (optional)</label><input
-							id="moment-time"
-							class="input"
-							type="time"
-							bind:value={time}
-						/>
+					<div class="input-row">
+						<div class="input-block">
+							<label for="moment-date" class="input-label">Date (past or future)</label><input
+								id="moment-date"
+								class="input"
+								type="date"
+								bind:value={date}
+								required
+							/>
+						</div>
+						<div class="input-block">
+							<label for="moment-time" class="input-label">Time (optional)</label><input
+								id="moment-time"
+								class="input"
+								type="time"
+								bind:value={time}
+							/>
+						</div>
 					</div>
 				</div>
-				<div class="input-block">
+				<div class="input-block memory-block">
 					<label for="moment-note" class="input-label">A memory (optional)</label><textarea
 						id="moment-note"
 						class="input memory-input"
@@ -609,10 +637,13 @@
 						placeholder="A few words you’d like to remember"
 					></textarea>
 				</div>
-				<button type="submit" class="primary-btn"
-					>{editingId ? 'Update moment' : 'Track a moment'}</button
-				><button type="button" class="settings-button" on:click={resetForm}>Cancel</button>
+				<div class="form-actions">
+					<button type="button" class="settings-button" on:click={resetForm}>Cancel</button>
+					<button type="submit" class="primary-btn"
+						>{editingId ? 'Update moment' : 'Track a moment'}</button
+					>
+				</div>
 			</form>
 		</section>
 	{/if}
-</main>
+</div>

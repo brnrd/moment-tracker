@@ -4,8 +4,26 @@ import MomentTracker from '../components/MomentTracker.svelte'
 ---
 
 <Layout>
-	<main>
-		<h1 class="title">Moment Tracker</h1>
+	<main class="workspace">
+		<header class="masthead">
+			<a class="wordmark" href="/" aria-label="Moment Tracker home">
+				<span>Moment Tracker</span>
+			</a>
+			<span class="masthead-note">A space for your time</span>
+		</header>
+		<section class="hero" aria-labelledby="hero-title">
+			<div class="hero-copy">
+				<p class="eyebrow">The little things. The big shifts.</p>
+				<h1 id="hero-title">Life moves.<span>Keep a <em>moment.</em></span></h1>
+				<p class="hero-description">
+					Some dates mean more. Give them a place, and watch the time unfold.
+				</p>
+			</div>
+		</section>
 		<MomentTracker client:load />
+		<footer class="page-footer">
+			<span>A little room for what matters.</span>
+			<span>Made for the passing of time <span aria-hidden="true">↗</span></span>
+		</footer>
 	</main>
 </Layout>
