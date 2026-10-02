@@ -8,7 +8,8 @@
 		"preview": "astro preview",
 		"astro": "astro",
 		"lint": "eslint . --ext .js,.svelte",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"test": "node --test tests/*.test.mjs"
 	},
 	"dependencies": {
 		"@astrojs/svelte": "^7.0.8",
@@ -21,6 +22,7 @@
 		"eslint-config-prettier": "^10.1.1",
 		"eslint-plugin-svelte": "^3.3.3",
 		"prettier": "^3.5.3",
-		"prettier-plugin-svelte": "^3.3.3"
+		"prettier-plugin-svelte": "^3.3.3",
+		"@eslint/js": "^9.39.2"
 	}
 }
