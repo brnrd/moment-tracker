@@ -1,494 +1,618 @@
 <script>
 	import { onMount } from 'svelte'
 	import dayjs from 'dayjs'
-
-	const REFRESH_INTERVAL = 1000 * 60 // 1 minute
+	import {
+		localDate,
+		validate,
+		encodeMoments,
+		decode,
+		elapsed,
+		milestone,
+		nextDisplay,
+		resolveDisplay
+	} from '../lib/moments.js'
 
 	let moments = []
-	let newMomentName = ''
-	let newMomentDate = ''
-	let newMomentTime = ''
-	let isEditing = false
-	let editingIndex = null
+	let name = ''
+	let date = ''
+	let time = ''
+	let note = ''
+	let editingId = null
 	let nameInput
+	let fileInput
 	let shareCode = ''
-	let intervalId
-	let dateFormat
+	let settingsStatus = ''
+	let settingsError = ''
+	let sharingId = null
+	let shareFeedback = ''
+	let canShare = false
+	let displays = {}
+	let pendingImport = null
+	let status = ''
+	let error = ''
+	let undoState = null
+	let now = new Date()
+	let dateFormat = 'default'
 	let theme = 'system'
+	let display = 'calendar'
 	let isFormVisible = false
 	let isSettingsVisible = false
 	let isEditMode = false
-	let draggedIndex = null
+	let showArchive = false
+	let draggedId = null
 
-	if (typeof localStorage !== 'undefined' && localStorage.getItem('momentTrackerDateFormat')) {
-		dateFormat = localStorage.getItem('momentTrackerDateFormat')
-	} else {
-		dateFormat = 'default'
-	}
+	const id = () => crypto.randomUUID()
+	$: activeMoments = moments.filter((moment) => !moment.archived)
+	$: archivedMoments = moments.filter((moment) => moment.archived)
+	$: visibleMoments = showArchive ? archivedMoments : activeMoments
 
-	// Load moments from localStorage on component mount
 	onMount(() => {
-		const savedCode = localStorage.getItem('momentTrackerData')
-
-		if (savedCode) {
-			loadMoments(savedCode, false)
+		try {
+			const saved = localStorage.getItem('momentTrackerData')
+			if (saved) moments = decode(saved)
+			dateFormat = localStorage.getItem('momentTrackerDateFormat') || 'default'
+			theme = localStorage.getItem('theme') || 'system'
+			display = localStorage.getItem('momentTrackerDisplay') || 'calendar'
+			displays = JSON.parse(localStorage.getItem('momentTrackerDisplays') || '{}')
+			if (!displays || typeof displays !== 'object' || Array.isArray(displays)) displays = {}
+			applyTheme()
+		} catch {
+			error = 'Your saved moments could not be read. You can restore a backup in Settings.'
 		}
-
-		// Load saved theme preference
-		const savedTheme = localStorage.getItem('theme')
-
-		if (savedTheme) {
-			theme = savedTheme
-			document.documentElement.setAttribute('data-theme', savedTheme)
-		}
-
-		// Cleanup interval on component destroy
+		canShare = typeof navigator.share === 'function'
+		const timer = setInterval(() => (now = new Date()), 60000)
+		const refresh = () => (now = new Date())
+		window.addEventListener('focus', refresh)
 		return () => {
-			if (intervalId) clearInterval(intervalId)
+			clearInterval(timer)
+			window.removeEventListener('focus', refresh)
 		}
 	})
 
-	function saveToStorage() {
-		if (moments.length === 0) {
-			localStorage.removeItem('momentTrackerData')
-			shareCode = ''
-			return
-		}
-
-		const encoded = encodeMoments()
-
-		localStorage.setItem('momentTrackerData', encoded)
-		shareCode = encoded
+	function payload() {
+		return { version: 2, moments }
 	}
 
-	function encodeMoments() {
-		return btoa(moments.map((moment) => `${moment.name}|${moment.date}|${moment.time || ''}`).join('~~'))
+	function encode() {
+		return encodeMoments(moments)
 	}
 
-	function loadMoments(code, askForMerge = true) {
+	function save() {
 		try {
-			const decoded = atob(code.trim())
-			const newMoments = decoded.split('~~').map((moment) => {
-				const [name, date, time] = moment.split('|')
-				return {
-					name,
-					date,
-					time: time || null,
-					elapsedTime: ''
-				}
-			})
-
-			if (askForMerge && moments.length > 0) {
-				const choice = confirm(
-					'Do you want to add these moments to your existing ones? Click OK to add, Cancel to replace.'
-				)
-				if (choice) {
-					// Merge moments
-					moments = [...moments, ...newMoments]
-				} else {
-					// Replace moments
-					moments = newMoments
-				}
-			} else {
-				moments = newMoments
-			}
-
-			updateElapsedTimes()
-
-			if (moments.length > 0) {
-				if (intervalId) clearInterval(intervalId)
-				intervalId = setInterval(updateElapsedTimes, REFRESH_INTERVAL)
-			}
-
-			saveToStorage()
-		} catch (event) {
-			alert('Invalid code')
-			shareCode = moments.length > 0 ? encodeMoments() : ''
+			const encoded = encode()
+			localStorage.setItem('momentTrackerData', encoded)
+			shareCode = encoded
+		} catch {
+			error = 'Your changes could not be saved in this browser. Download a backup to keep them.'
 		}
 	}
 
-	function handleShareCodeChange() {
-		if (!shareCode) return
+	function applyTheme() {
+		if (theme === 'system') document.documentElement.removeAttribute('data-theme')
+		else document.documentElement.setAttribute('data-theme', theme)
+	}
 
-		if (shareCode !== encodeMoments()) {
-			loadMoments(shareCode)
+	function preference(key, value) {
+		try {
+			localStorage.setItem(key, value)
+		} catch {
+			error = 'This browser could not save your preference.'
 		}
 	}
 
-	function generateDisplayString(momentTime, momentHasTime) {
-		let from = dayjs()
-		let to = dayjs(momentTime)
-		
-		if (!momentHasTime) {
-			to = to.set('hour', 0).set('minute', 0).set('second', 0)
-		}
-
-		const isFuture = from.isBefore(to)
-
-		let years = to.diff(from, 'year')
-		from = from.add(years, 'year')
-		
-		let months = to.diff(from, 'month')
-		from = from.add(months, 'month')
-		
-		let days = to.diff(from, 'day')
-		from = from.add(days, 'day')
-		
-		if (!isFuture) {
-			years = Math.abs(years)
-			months = Math.abs(months)
-			days = Math.abs(days)
-		}
-		
-		if (isFuture && !momentHasTime && days < 1 && months === 0 && years === 0) {
-			return 'tomorrow'
-		}
-
-		if (isFuture) {
-			days += 1;
-		}
-
-		const parts = []
-
-		if (years) parts.push(`${years} year${years > 1 ? 's' : ''}`)
-		if (months) parts.push(`${months} month${months > 1 ? 's' : ''}`)
-		if (days) parts.push(`${days} day${days > 1 ? 's' : ''}`)
-		
-		if (momentHasTime) {
-			let hours = to.diff(from, 'hour')
-			from = from.add(hours, 'hour')
-			
-			let minutes = to.diff(from, 'minute')
-			from = from.add(minutes, 'minute')
-			
-			if (!isFuture) {
-				hours = Math.abs(hours)
-				minutes = Math.abs(minutes)
-			}
-			
-			if (hours) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`)
-			if (minutes) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`)
-		}
-		
-		let timeString = parts.join(', ')
-
-		if (isFuture) {
-			return `in ${timeString}`
-		}
-
-		if (timeString === '' && !momentHasTime) {
-			return 'today'
-		}
-
-		if (timeString === '' && momentHasTime) {
-			return 'now'
-		}
-		
-		return `${timeString} ago`
+	function mode(moment, overrides, current) {
+		const selected = overrides[moment.id] || display
+		return resolveDisplay(moment, current, selected)
 	}
 
-	function updateElapsedTimes() {
-		moments = moments.map((moment) => {
-			const date = new Date(moment.date)
-
-			if (moment.time) {
-				const [hours, minutes] = moment.time.split(':')
-				date.setHours(hours, minutes, 0, 0)
-			}
-
-			return {
-				...moment,
-				elapsedTime: generateDisplayString(date, !!moment.time)
-			}
-		})
+	function toggleDisplay(moment) {
+		displays = { ...displays, [moment.id]: nextDisplay(moment, now, mode(moment, displays, now)) }
+		preference('momentTrackerDisplays', JSON.stringify(displays))
 	}
 
-	function editMoment(index) {
-		const moment = moments[index]
-
-		newMomentName = moment.name
-		newMomentDate = moment.date
-		newMomentTime = moment.time
-		editingIndex = index
-		isEditing = true
-		isFormVisible = true
-		setTimeout(() => nameInput.focus(), 100)
+	function displayLabel(value) {
+		return value === 'calendar' ? 'years, months & days' : `total ${value}`
 	}
 
-	function handleSubmit(event) {
-		event.preventDefault()
+	function formatDate(value) {
+		if (dateFormat === 'logical') return value
+		return localDate({ date: value })
+			.toDate()
+			.toLocaleDateString(dateFormat === 'us' ? 'en-US' : dateFormat === 'eu' ? 'en-GB' : undefined)
+	}
 
-		if (isEditing) {
-			moments[editingIndex] = {
-				name: newMomentName,
-				date: newMomentDate,
-				time: newMomentTime || null,
-				elapsedTime: ''
-			}
-			isEditing = false
-			editingIndex = null
-		} else {
-			if (!newMomentName || !newMomentDate) return
-			moments = [
-				...moments,
-				{
-					name: newMomentName,
-					date: newMomentDate,
-					time: newMomentTime || null,
-					elapsedTime: ''
-				}
-			]
-		}
-		saveToStorage()
-		newMomentName = ''
-		newMomentDate = ''
-		newMomentTime = ''
+	function resetForm() {
+		name = ''
+		date = ''
+		time = ''
+		note = ''
+		editingId = null
 		isFormVisible = false
-		updateElapsedTimes()
-		if (moments.length === 1) {
-			intervalId = setInterval(updateElapsedTimes, 1000)
-		}
 	}
 
-	function removeMoment(index) {
-		moments = moments.filter((_, i) => i !== index)
-		saveToStorage()
+	function edit(moment) {
+		name = moment.name
+		date = moment.date
+		time = moment.time || ''
+		note = moment.note
+		editingId = moment.id
+		isFormVisible = true
+		setTimeout(() => nameInput?.focus(), 0)
 	}
 
-	function handleDateFormatChange(event) {
-		dateFormat = event.target.value
-
-		localStorage.setItem('momentTrackerDateFormat', dateFormat)
-	}
-
-	function formatDate(dateStr, format) {
-		const date = new Date(dateStr)
-
-		switch (format) {
-			case 'us':
-				return date.toLocaleDateString('en-US')
-			case 'eu':
-				return date.toLocaleDateString('en-GB')
-			case 'logical':
-				return dateStr
-			default:
-				return date.toLocaleDateString()
-		}
-	}
-
-	function handleThemeChange(event) {
-		theme = event.target.value
-
-		if (theme === 'system') {
-			document.documentElement.removeAttribute('data-theme')
-		} else {
-			document.documentElement.setAttribute('data-theme', theme)
-		}
-		localStorage.setItem('theme', theme)
-	}
-
-	function copyToClipboard() {
-		navigator.clipboard.writeText(shareCode)
-			.then(() => {
-				console.log('Share code copied to clipboard')
-			})
-			.catch((err) => {
-				console.error('Failed to copy share code: ', err)
-			})
-	}
-
-	function handleDragStart(index) {
-		draggedIndex = index
-	}
-
-	function handleDragOver(event, index) {
+	function submit(event) {
 		event.preventDefault()
+		try {
+			const existing = moments.find((moment) => moment.id === editingId)
+			const [entry] = validate([
+				{ id: editingId || id(), name, date, time, note, archived: existing?.archived || false }
+			])
+			moments = editingId
+				? moments.map((moment) => (moment.id === editingId ? entry : moment))
+				: [...moments, entry]
+			if (!editingId) showArchive = false
+			error = ''
+			save()
+			resetForm()
+			now = new Date()
+		} catch (cause) {
+			error = cause.message
+		}
 	}
 
-	function handleDrop(event, index) {
-		event.preventDefault()
-		if (draggedIndex === null || draggedIndex === index) return
-
-		const newMoments = [...moments]
-		const [draggedMoment] = newMoments.splice(draggedIndex, 1)
-		newMoments.splice(index, 0, draggedMoment)
-		moments = newMoments
-		draggedIndex = null
-		saveToStorage()
+	function remove(moment) {
+		undoState = {
+			type: 'delete',
+			moment,
+			index: moments.findIndex((entry) => entry.id === moment.id)
+		}
+		moments = moments.filter((entry) => entry.id !== moment.id)
+		if (editingId === moment.id) resetForm()
+		status = `Removed “${moment.name}”.`
+		save()
 	}
 
-	function handleDragEnd() {
-		draggedIndex = null
+	function undo() {
+		if (!undoState) return
+		if (undoState.type === 'delete') {
+			const restored = [...moments]
+			if (!restored.some((entry) => entry.id === undoState.moment.id))
+				restored.splice(undoState.index, 0, undoState.moment)
+			moments = restored
+		} else moments = undoState.moments
+		const undoType = undoState.type
+		undoState = null
+		if (undoType === 'import') settingsStatus = 'Import undone.'
+		else status = 'Moment restored.'
+		save()
 	}
 
+	function archive(moment) {
+		moments = moments.map((entry) =>
+			entry.id === moment.id ? { ...entry, archived: !entry.archived } : entry
+		)
+		save()
+	}
+
+	function move(momentId, destinationId) {
+		const from = moments.findIndex((moment) => moment.id === momentId)
+		const to = moments.findIndex((moment) => moment.id === destinationId)
+		if (from < 0 || to < 0 || from === to) return
+		const reordered = [...moments]
+		const [entry] = reordered.splice(from, 1)
+		reordered.splice(to, 0, entry)
+		moments = reordered
+		save()
+	}
+
+	async function copyCode() {
+		try {
+			await navigator.clipboard.writeText(shareCode)
+			settingsStatus = 'Moment code copied.'
+			settingsError = ''
+		} catch {
+			settingsError = 'Copy failed. Select the code and copy it manually.'
+		}
+	}
+
+	function shareText(moment, current, selectedDisplay) {
+		return `${moment.name} — ${elapsed(moment, current, selectedDisplay)}.`
+	}
+
+	async function shareMoment(moment, native = false) {
+		try {
+			if (native) {
+				await navigator.share({ text: shareText(moment, now, mode(moment, displays, now)) })
+				shareFeedback = 'Moment shared.'
+			} else {
+				await navigator.clipboard.writeText(shareText(moment, now, mode(moment, displays, now)))
+				shareFeedback = 'Message copied.'
+			}
+		} catch (cause) {
+			if (cause.name !== 'AbortError')
+				shareFeedback = 'Sharing unavailable. Select and copy the message below.'
+		}
+	}
+
+	function prepareImport(text) {
+		try {
+			pendingImport = decode(text)
+			settingsError = ''
+			settingsStatus = ''
+		} catch (cause) {
+			pendingImport = null
+			settingsError = `Could not import: ${cause.message}`
+		}
+	}
+
+	async function readBackup(event) {
+		const file = event.target.files?.[0]
+		if (!file) return
+		try {
+			prepareImport(await file.text())
+		} catch {
+			settingsError = 'This backup file could not be read.'
+		}
+		event.target.value = ''
+	}
+
+	function importMoments(replace) {
+		undoState = { type: 'import', moments: [...moments] }
+		moments = replace
+			? pendingImport
+			: [...moments, ...pendingImport.map((moment) => ({ ...moment, id: id() }))]
+		pendingImport = null
+		settingsError = ''
+		resetForm()
+		save()
+		settingsStatus = 'Moments imported.'
+		status = ''
+	}
+
+	function downloadBackup() {
+		const url = URL.createObjectURL(
+			new Blob([JSON.stringify(payload(), null, 2)], { type: 'application/json' })
+		)
+		const link = document.createElement('a')
+		link.href = url
+		link.download = `moment-tracker-${dayjs().format('YYYY-MM-DD')}.json`
+		document.body.append(link)
+		link.click()
+		link.remove()
+		setTimeout(() => URL.revokeObjectURL(url), 1000)
+		settingsStatus = 'Backup downloaded.'
+	}
 </script>
 
 <main class="app">
-	<div class="action-row">
+	<div class="action-row app-toolbar">
 		<button
 			class="settings-button"
-			on:click={() => (isSettingsVisible = !isSettingsVisible)}
-			aria-label={isSettingsVisible ? 'Hide settings' : 'Show settings'}
+			on:click={() => {
+				isSettingsVisible = !isSettingsVisible
+				if (isSettingsVisible) shareCode = encode()
+			}}
+			aria-expanded={isSettingsVisible}>Settings {isSettingsVisible ? '−' : '+'}</button
 		>
-			Settings {isSettingsVisible ? '−' : '+'}
-		</button>
-		{#if moments.length > 0}
-			<button
+		{#if moments.length}<button
 				class="settings-button"
 				class:active={isEditMode}
-				on:click={() => isEditMode = !isEditMode}
-				aria-label={isEditMode ? 'Exit edit mode' : 'Enter edit mode'}
-			>
-				{isEditMode ? 'Done' : 'Edit'}
-			</button>
-		{/if}
+				on:click={() => (isEditMode = !isEditMode)}>{isEditMode ? 'Done' : 'Edit'}</button
+			>{/if}
+		{#if archivedMoments.length || showArchive}<button
+				class="settings-button"
+				on:click={() => (showArchive = !showArchive)}
+				>{showArchive ? 'Back to moments' : `Archive (${archivedMoments.length})`}</button
+			>{/if}
 	</div>
-	
 
-	<section class="settings-container" class:visible={isSettingsVisible}>
-		<div class="input-row">
-			<div class="input-block">
-				<label for="date-format" class="input-label">Date format </label>
-				<select
-					id="date-format"
-					class="input"
-					bind:value={dateFormat}
-					on:change={handleDateFormatChange}
-				>
-					<option value="default">Default</option>
-					<option value="logical">Logical (YYYY-MM-DD)</option>
-					<option value="us">US (MM/DD/YYYY)</option>
-					<option value="eu">EU (DD/MM/YYYY)</option>
-				</select>
-			</div>
-
-			<div class="input-block">
-				<label for="theme" class="input-label"> Theme </label>
-				<select id="theme" class="input" bind:value={theme} on:change={handleThemeChange}>
-					<option value="system">System preference</option>
-					<option value="light">Light</option>
-					<option value="dark">Dark</option>
-				</select>
-			</div>
+	{#if status || undoState?.type === 'delete'}
+		<div class="feedback" role="status">
+			<span>{status}</span>{#if undoState?.type === 'delete'}<button
+					class="settings-button"
+					on:click={undo}>Undo</button
+				>{/if}
 		</div>
+	{/if}
+	{#if error}<p class="feedback error" role="alert">
+			{error}<button class="settings-button" on:click={() => (error = '')}>Dismiss</button>
+		</p>{/if}
 
-		<div class="input-row">
-			<div class="input-block">
-				<label for="share-code" class="input-label">
-					{moments.length > 0 ? 'Share or save your moments' : 'Import moments'}
-				</label>
-				<div class="share-code-wrapper">
-					<input
-						id="share-code"
-						class="input share-input"
-						type="text"
-						placeholder="Paste your moment code here"
-						bind:value={shareCode}
-						on:change={handleShareCodeChange}
-						on:focus={(e) => e.target.select()}
-					/>
-					{#if shareCode}
-						<button type="button" class="copy-btn" on:click={copyToClipboard} aria-label="Copy share code">Copy</button>
-					{/if}
+	{#if isSettingsVisible}
+		<section class="settings-panel" aria-label="Settings">
+			<div class="input-row">
+				<div class="input-block">
+					<label for="date-format" class="input-label">Date format</label><select
+						id="date-format"
+						class="input"
+						bind:value={dateFormat}
+						on:change={() => preference('momentTrackerDateFormat', dateFormat)}
+						><option value="default">Default</option><option value="logical">YYYY-MM-DD</option
+						><option value="us">MM/DD/YYYY</option><option value="eu">DD/MM/YYYY</option></select
+					>
+				</div>
+				<div class="input-block">
+					<label for="theme" class="input-label">Theme</label><select
+						id="theme"
+						class="input"
+						bind:value={theme}
+						on:change={() => {
+							applyTheme()
+							preference('theme', theme)
+						}}
+						><option value="system">System preference</option><option value="light">Light</option
+						><option value="dark">Dark</option></select
+					>
 				</div>
 			</div>
-		</div>
-	</section>
-	
-	{#if moments.length > 0}
-		<section aria-label="Moment list">
+			<div class="settings-group input-block">
+				<label for="share-code" class="input-label">Share or import moments</label>
+				<p id="code-help" class="quiet">
+					Copy your code to save or transfer all your moments. To import, paste another code here
+					and choose Load code.
+				</p>
+				<textarea
+					id="share-code"
+					class="input code-input"
+					bind:value={shareCode}
+					aria-describedby="code-help"
+					spellcheck="false"
+					on:input={() => {
+						pendingImport = null
+						settingsError = ''
+						settingsStatus = ''
+					}}
+				></textarea>
+				<div class="code-actions">
+					<button class="settings-button" disabled={!shareCode.trim()} on:click={copyCode}
+						>Copy code</button
+					>
+					<button
+						class="settings-button"
+						disabled={!shareCode.trim() || shareCode === encode()}
+						on:click={() => prepareImport(shareCode)}>Load code</button
+					>
+					{#if shareCode !== encode()}<button
+							class="text-button"
+							on:click={() => {
+								shareCode = encode()
+								pendingImport = null
+								settingsError = ''
+								settingsStatus = ''
+							}}>Use my code</button
+						>{/if}
+				</div>
+				<p class="quiet privacy-note">
+					Your code includes notes and archived moments. Anyone with it can read them.
+				</p>
+			</div>
+			<div class="settings-group backup-actions">
+				<div>
+					<span class="input-label">File backup</span>
+					<p class="quiet">Keep a copy on your device, or restore a saved file.</p>
+				</div>
+				<div class="code-actions">
+					<button class="settings-button" on:click={downloadBackup}>Download</button><button
+						class="settings-button"
+						on:click={() => fileInput.click()}>Restore file</button
+					>
+				</div>
+				<input
+					class="sr-only"
+					type="file"
+					accept=".json,application/json"
+					bind:this={fileInput}
+					on:change={readBackup}
+					tabindex="-1"
+					aria-label="Choose backup file"
+				/>
+			</div>
+			{#if settingsStatus || undoState?.type === 'import'}<div
+					class="feedback settings-feedback"
+					role="status"
+				>
+					<span>{settingsStatus}</span>{#if undoState?.type === 'import'}<button
+							class="text-button"
+							on:click={undo}>Undo import</button
+						>{/if}
+				</div>{/if}
+			{#if settingsError}<p class="quiet error" role="alert">{settingsError}</p>{/if}
+
+			{#if pendingImport !== null}
+				<div class="import-preview">
+					<p class="quiet">
+						{pendingImport.length} moment{pendingImport.length === 1 ? '' : 's'} ready to import.
+					</p>
+					<ul class="preview-list">
+						{#each pendingImport as moment (moment.id)}<li>
+								{moment.name} · {formatDate(moment.date)}{moment.archived ? ' · archived' : ''}
+							</li>{/each}
+					</ul>
+					<div class="action-row backup-actions">
+						<button class="settings-button" on:click={() => importMoments(false)}
+							>Add to moments</button
+						><button class="settings-button" on:click={() => importMoments(true)}
+							>Replace all moments</button
+						><button class="settings-button" on:click={() => (pendingImport = null)}>Cancel</button>
+					</div>
+				</div>
+			{/if}
+		</section>
+	{/if}
+
+	{#if showArchive}<p class="quiet">Archived moments</p>{/if}
+	{#if visibleMoments.length}
+		<section aria-label={showArchive ? 'Archived moments' : 'Moment list'}>
 			<ul class="moment-list">
-				{#each moments as moment, index}
-					<li 
+				{#each visibleMoments as moment, index (moment.id)}
+					<li
 						class="moment-item"
 						class:draggable={isEditMode}
 						draggable={isEditMode}
-						on:dragstart={() => handleDragStart(index)}
-						on:dragover={(e) => handleDragOver(e, index)}
-						on:drop={(e) => handleDrop(e, index)}
-						on:dragend={handleDragEnd}
+						on:dragstart={() => (draggedId = moment.id)}
+						on:dragover={(event) => event.preventDefault()}
+						on:drop={(event) => {
+							event.preventDefault()
+							move(draggedId, moment.id)
+							draggedId = null
+						}}
+						on:dragend={() => (draggedId = null)}
 					>
 						<div class="moment-meta">
-							<strong>{moment.name}</strong>
-							<span class="timestamp">
-								({formatDate(moment.date, dateFormat)}{moment.time ? ` ${moment.time}` : ''})
-							</span>
-							<span class="elapsed">{moment.elapsedTime}</span>
+							<strong>{moment.name}</strong><span class="timestamp"
+								>{formatDate(moment.date)}{moment.time ? ` ${moment.time}` : ''}</span
+							>
+							<button
+								class="elapsed elapsed-toggle"
+								on:click={() => toggleDisplay(moment)}
+								aria-label={`${elapsed(moment, now, mode(moment, displays, now))}. Show ${displayLabel(nextDisplay(moment, now, mode(moment, displays, now)))}`}
+							>
+								<span>{elapsed(moment, now, mode(moment, displays, now))}</span><span
+									class="display-hint"
+									>Show {displayLabel(nextDisplay(moment, now, mode(moment, displays, now)))} ↻</span
+								>
+							</button>
+
+							{#if !showArchive && milestone(moment, now)}<span class="milestone"
+									>{milestone(moment, now)}</span
+								>{/if}
+							{#if moment.note}<details class="moment-note">
+									<summary>Memory</summary>
+									<p>{moment.note}</p>
+								</details>{/if}
+							{#if sharingId === moment.id}
+								<div class="moment-share" aria-label={`Share ${moment.name}`}>
+									<textarea
+										class="input share-message"
+										aria-label="Message to share"
+										readonly
+										value={shareText(moment, now, mode(moment, displays, now))}
+										on:focus={(event) => event.target.select()}
+									></textarea>
+									<div class="code-actions">
+										<button class="settings-button" on:click={() => shareMoment(moment)}
+											>Copy message</button
+										>
+										{#if canShare}<button
+												class="settings-button"
+												on:click={() => shareMoment(moment, true)}>Share via…</button
+											>{/if}
+										<button class="text-button" on:click={() => (sharingId = null)}>Close</button>
+									</div>
+									{#if shareFeedback}<p class="quiet" role="status">{shareFeedback}</p>{/if}
+								</div>
+							{/if}
 						</div>
-						{#if isEditMode}
-							<div class="moment-actions">
-								<button class="edit-btn" on:click={() => editMoment(index)} aria-label="Edit moment">✎</button>
-								<button class="remove-btn" on:click={() => removeMoment(index)} aria-label="Remove moment">✕</button>
-							</div>
-						{/if}
+						<div class="moment-controls">
+							<button
+								class="text-button share-button"
+								aria-expanded={sharingId === moment.id}
+								aria-label={`Share ${moment.name}`}
+								on:click={() => {
+									sharingId = sharingId === moment.id ? null : moment.id
+									shareFeedback = ''
+								}}>Share ↗</button
+							>
+							{#if isEditMode}
+								<div class="moment-actions">
+									<button
+										class="edit-btn"
+										disabled={index === 0}
+										on:click={() => move(moment.id, visibleMoments[index - 1].id)}
+										aria-label={`Move ${moment.name} up`}>↑</button
+									>
+									<button
+										class="edit-btn"
+										disabled={index === visibleMoments.length - 1}
+										on:click={() => move(moment.id, visibleMoments[index + 1].id)}
+										aria-label={`Move ${moment.name} down`}>↓</button
+									>
+									<button
+										class="edit-btn"
+										on:click={() => edit(moment)}
+										aria-label={`Edit ${moment.name}`}>✎</button
+									>
+									<button class="settings-button" on:click={() => archive(moment)}
+										>{moment.archived ? 'Restore' : 'Archive'}</button
+									>
+									<button
+										class="remove-btn"
+										on:click={() => remove(moment)}
+										aria-label={`Delete ${moment.name}`}>✕</button
+									>
+								</div>
+							{/if}
+						</div>
 					</li>
 				{/each}
 			</ul>
 		</section>
-	{:else}
-		<p class="empty">No moment yet. Add one to get started!</p>
-	{/if}
-
+	{:else}<p class="empty">
+			{showArchive
+				? 'No archived moments.'
+				: archivedMoments.length
+					? 'Your moments are in the archive. Add another whenever you like.'
+					: 'No moment yet. Add one to get started!'}
+		</p>{/if}
 
 	<div class="action-row">
 		<button
 			class="add-button"
 			on:click={() => {
-				isFormVisible = !isFormVisible
-				if (isFormVisible) {
-					setTimeout(() => nameInput.focus(), 100)
+				if (isFormVisible) resetForm()
+				else {
+					isFormVisible = true
+					setTimeout(() => nameInput?.focus(), 0)
 				}
 			}}
-			aria-label={isFormVisible ? 'Hide add moment form' : 'Show add moment form'}
+			aria-label={isFormVisible ? 'Close moment form' : 'Add a moment'}
+			aria-expanded={isFormVisible}>{isFormVisible ? '−' : '+'}</button
 		>
-			{isFormVisible ? '−' : '+'}
-		</button>
 	</div>
-	
-
-	<section class="form-container" class:visible={isFormVisible}>
-		<form class="add-moment-form" on:submit={handleSubmit}>
-			<div class="input-row">
+	{#if isFormVisible}
+		<section aria-label={editingId ? 'Edit moment' : 'Add moment'}>
+			<form class="add-moment-form" on:submit={submit}>
 				<div class="input-block">
-					<label for="moment-name" class="input-label">Moment name</label>
-					<input
-					id="moment-name"
-					class="input"
-					type="text"
-					placeholder="Moment name"
-					bind:this={nameInput}
-					bind:value={newMomentName}
-					required
-					/>
-				</div>
-			</div>
-			
-
-			<div class="input-row">
-				<div class="input-block">
-					<label for="moment-date" class="input-label">Date (past or future)</label>
-					<input id="moment-date" class="input" type="date" bind:value={newMomentDate} required />
-				</div>
-
-				<div class="input-block">
-					<label for="moment-time" class="input-label">Time</label>
-					<input
-						id="moment-time"
+					<label for="moment-name" class="input-label">Moment name</label><input
+						id="moment-name"
 						class="input"
-						type="time"
-						bind:value={newMomentTime}
-						placeholder="Optional time"
+						bind:this={nameInput}
+						bind:value={name}
+						required
 					/>
 				</div>
-			</div>
-
-			<button type="submit" class="primary-btn">
-				{#if isEditing}
-					Update a moment
-				{:else}
-					Track a moment
-				{/if}
-			</button>
-		</form>
-	</section>
+				<div class="input-row">
+					<div class="input-block">
+						<label for="moment-date" class="input-label">Date (past or future)</label><input
+							id="moment-date"
+							class="input"
+							type="date"
+							bind:value={date}
+							required
+						/>
+					</div>
+					<div class="input-block">
+						<label for="moment-time" class="input-label">Time (optional)</label><input
+							id="moment-time"
+							class="input"
+							type="time"
+							bind:value={time}
+						/>
+					</div>
+				</div>
+				<div class="input-block">
+					<label for="moment-note" class="input-label">A memory (optional)</label><textarea
+						id="moment-note"
+						class="input memory-input"
+						bind:value={note}
+						maxlength="1000"
+						placeholder="A few words you’d like to remember"
+					></textarea>
+				</div>
+				<button type="submit" class="primary-btn"
+					>{editingId ? 'Update moment' : 'Track a moment'}</button
+				><button type="button" class="settings-button" on:click={resetForm}>Cancel</button>
+			</form>
+		</section>
+	{/if}
 </main>

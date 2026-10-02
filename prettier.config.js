@@ -1,16 +1,15 @@
 /** @type {import('prettier').Config} */
-module.exports = {
+export default {
 	useTabs: true,
 	semi: false,
 	singleQuote: true,
 	trailingComma: 'none',
 	svelteSortOrder: 'options-scripts-markup-styles',
-	svelteStrictMode: false,
+	svelteStrictMode: true,
 	svelteBracketNewLine: true,
 	svelteAllowShorthand: true,
 	printWidth: 100,
 	plugins: ['prettier-plugin-svelte'],
-	pluginSearchDirs: ['.'],
 	overrides: [
 		{
 			files: '*.svelte',
@@ -20,4 +19,4 @@ module.exports = {
 			}
 		}
 	]
-};
+}
